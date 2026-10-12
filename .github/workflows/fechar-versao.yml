@@ -1,0 +1,99 @@
+name: Fechar versão
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Número do Pull Request
+        required: true
+        type: number
+      tipo:
+        description: Tipo de versão
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: fechar-versao
+
+jobs:
+  fechar-versao:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ inputs.pr }}
+      TIPO: ${{ inputs.tipo }}
+      TZ: America/Sao_Paulo
+    steps:
+      - name: Ler os dados do Pull Request
+        run: |
+          gh pr view "$PR" --json state,headRefName > "$RUNNER_TEMP/pr.json"
+          if [ "$(jq -r .state "$RUNNER_TEMP/pr.json")" != "OPEN" ]; then
+            echo "::error::O Pull Request #$PR não está aberto"
+            exit 1
+          fi
+          echo "BRANCH=$(jq -r .headRefName "$RUNNER_TEMP/pr.json")" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BRANCH }}
+          fetch-depth: 0
+
+      - name: Conferir as entradas do CHANGELOG
+        run: |
+          if ! grep -q '^## \[Não lançado\]' CHANGELOG.md; then
+            echo "::error::O CHANGELOG.md não tem a seção [Não lançado]"
+            exit 1
+          fi
+          # tudo o que está entre [Não lançado] e a versão anterior
+          awk '/^## \[Não lançado\]/ { dentro = 1; next } /^## \[/ { dentro = 0 } dentro' CHANGELOG.md > "$RUNNER_TEMP/notas.md"
+          if ! grep -E '^[*-] ' "$RUNNER_TEMP/notas.md" | grep -qv 'N/A'; then
+            echo "::error::A seção [Não lançado] não tem nenhuma entrada"
+            exit 1
+          fi
+
+      - name: Calcular a próxima versão
+        run: |
+          ultima=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+          ultima=${ultima:-v0.0.0}
+          IFS=. read -r maior menor correcao <<< "${ultima#v}"
+          case "$TIPO" in
+            major) maior=$((maior + 1)); menor=0; correcao=0 ;;
+            minor) menor=$((menor + 1)); correcao=0 ;;
+            patch) correcao=$((correcao + 1)) ;;
+          esac
+          echo "VERSAO=$maior.$menor.$correcao" >> "$GITHUB_ENV"
+
+      - name: Fechar a versão no CHANGELOG
+        run: |
+          # [Não lançado] vira a versão fechada, e um bloco vazio do modelo entra acima dela
+          awk -v titulo="## [$VERSAO] - $(date +%F)" -v modelo=".github/changelog-modelo.md" '
+            /^## \[Não lançado\]/ {
+              while ((getline linha < modelo) > 0) print linha
+              print ""
+              print titulo
+              next
+            }
+            { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/CHANGELOG.md"
+          mv "$RUNNER_TEMP/CHANGELOG.md" CHANGELOG.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "Fecha a versão $VERSAO"
+          git push origin "HEAD:$BRANCH"
+
+      - name: Mesclar o Pull Request
+        run: gh pr merge "$PR" --squash --match-head-commit "$(git rev-parse HEAD)"
+
+      - name: Criar a tag e a release
+        run: |
+          commit=$(gh pr view "$PR" --json mergeCommit --jq .mergeCommit.oid)
+          gh release create "v$VERSAO" --target "$commit" --title "v$VERSAO" --notes-file "$RUNNER_TEMP/notas.md"

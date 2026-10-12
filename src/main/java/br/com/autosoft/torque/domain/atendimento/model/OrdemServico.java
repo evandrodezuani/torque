@@ -1,0 +1,126 @@
+package br.com.autosoft.torque.domain.atendimento.model;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import br.com.autosoft.torque.domain.shared.RegraDeNegocioException;
+
+import lombok.Getter;
+
+/**
+ * Raiz do agregado. O status muda como consequência dos comandos de negócio abaixo;
+ * cada comando começa conferindo em que status a OS precisa estar.
+ */
+@Getter
+public class OrdemServico {
+
+	private final UUID id;
+	private final UUID clienteId;
+	private final UUID veiculoId;
+	private final Instant abertaEm;
+	private final List<Orcamento> orcamentos = new ArrayList<>();
+	private StatusOS status = StatusOS.RECEBIDA;
+	private Instant execucaoIniciadaEm;
+	private Instant execucaoConcluidaEm;
+	private Instant entregueEm;
+
+	private OrdemServico(UUID id, UUID clienteId, UUID veiculoId, Instant abertaEm) {
+		this.id = id;
+		this.clienteId = clienteId;
+		this.veiculoId = veiculoId;
+		this.abertaEm = abertaEm;
+	}
+
+	public static OrdemServico abrir(UUID clienteId, UUID veiculoId, Instant horaAtual) {
+		if (clienteId == null || veiculoId == null) {
+			throw new RegraDeNegocioException("Cliente e veículo são obrigatórios para abrir a OS");
+		}
+		OrdemServico os = new OrdemServico(UUID.randomUUID(), clienteId, veiculoId, horaAtual);
+		os.orcamentos.add(new Orcamento(1));
+		return os;
+	}
+
+	public void iniciarDiagnostico() {
+		if (status != StatusOS.RECEBIDA) {
+			throw new TransicaoInvalidaException("Só é possível iniciar o diagnóstico de uma OS recebida");
+		}
+		this.status = StatusOS.EM_DIAGNOSTICO;
+	}
+
+	public void incluirServico(ItemServico item) {
+		orcamentoAtual().adicionar(item);
+	}
+
+	public void incluirPeca(ItemPeca item) {
+		orcamentoAtual().adicionar(item);
+	}
+
+	public void concluirDiagnostico(Instant agora) {
+		if (status != StatusOS.EM_DIAGNOSTICO) {
+			throw new TransicaoInvalidaException("Só é possível concluir o diagnóstico de uma OS em diagnóstico");
+		}
+		orcamentoAtual().enviar(agora);
+		this.status = StatusOS.AGUARDANDO_APROVACAO;
+	}
+
+	public void aprovarOrcamento(Instant agora) {
+		if (status != StatusOS.AGUARDANDO_APROVACAO) {
+			throw new TransicaoInvalidaException("Só é possível aprovar o orçamento de uma OS aguardando aprovação");
+		}
+		orcamentoAtual().aprovar(agora);
+		this.status = StatusOS.EM_EXECUCAO;
+		this.execucaoIniciadaEm = agora;
+	}
+
+	public void rejeitarOrcamento(Instant agora) {
+		if (status != StatusOS.AGUARDANDO_APROVACAO) {
+			throw new TransicaoInvalidaException("Só é possível rejeitar o orçamento de uma OS aguardando aprovação");
+		}
+		orcamentoAtual().rejeitar(agora);
+		this.status = StatusOS.REJEITADA;
+	}
+
+	public void revisarOrcamento() {
+		if (status != StatusOS.REJEITADA) {
+			throw new TransicaoInvalidaException("Só é possível revisar o orçamento de uma OS rejeitada");
+		}
+		orcamentos.add(orcamentoAtual().revisar());
+		this.status = StatusOS.EM_DIAGNOSTICO;
+	}
+
+	public void concluirServico(Instant agora) {
+		if (status != StatusOS.EM_EXECUCAO) {
+			throw new TransicaoInvalidaException("Só é possível concluir o serviço de uma OS em execução");
+		}
+		this.status = StatusOS.FINALIZADA;
+		this.execucaoConcluidaEm = agora;
+	}
+
+	public void entregarVeiculo(Instant agora) {
+		if (status != StatusOS.FINALIZADA && status != StatusOS.REJEITADA) {
+			throw new TransicaoInvalidaException("Só é possível entregar o veículo de uma OS finalizada ou rejeitada");
+		}
+		this.status = StatusOS.ENTREGUE;
+		this.entregueEm = agora;
+	}
+
+	public Orcamento orcamentoAtual() {
+		return orcamentos.getLast();
+	}
+
+	public Optional<Duration> tempoDeExecucao() {
+		if (execucaoIniciadaEm == null || execucaoConcluidaEm == null) {
+			return Optional.empty();
+		}
+		return Optional.of(Duration.between(execucaoIniciadaEm, execucaoConcluidaEm));
+	}
+
+	public List<Orcamento> getOrcamentos() {
+		return List.copyOf(orcamentos);
+	}
+
+}
