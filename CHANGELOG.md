@@ -4,7 +4,7 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
-* N/A
+* [feature/atendimento-2](https://github.com/evandrodezuani/torque/issues/6) - Abrir OS pela API gravando no PostgreSQL
 
 ### Melhoria
 * N/A
@@ -22,7 +22,7 @@
 
 ### Nova Funcionalidade
 * [feature/atendimento-1](https://github.com/evandrodezuani/torque/issues/1) - Entidade `OrdemServico` com abertura no status Recebida (#1)
-* [feature/atendimento-2](https://github.com/evandrodezuani/torque/issues/2) - Criar o orçamento com itens de serviço e de peça
+* [feature/atendimento-2](https://github.com/evandrodezuani/torque/issues/8) - Criar o orçamento com itens de serviço e de peça
 
 ### Melhoria
 * N/A
