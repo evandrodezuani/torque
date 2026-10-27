@@ -18,23 +18,6 @@
 ### Atualização de banco de dados
 * N/A
 
-## [0.1.2] - 2026-10-27
-
-### Nova Funcionalidade
-* N/A
-
-### Melhoria
-* N/A
-
-### Correção de Erro
-* N/A
-
-### Atualização de Dependências
-* N/A
-
-### Atualização de banco de dados
-* N/A
-
 ## [0.1.1] - 2026-10-27
 
 ### Nova Funcionalidade
