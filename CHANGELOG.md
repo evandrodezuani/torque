@@ -18,7 +18,7 @@
 ### Atualização de banco de dados
 * N/A
 
-## [0.2.0] - 2026-10-27
+## [0.1.1] - 2026-10-27
 
 ### Nova Funcionalidade
 * [feature/atendimento-2](https://github.com/evandrodezuani/torque/issues/6) - Abrir OS pela API gravando no PostgreSQL
