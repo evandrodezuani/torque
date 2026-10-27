@@ -10,7 +10,7 @@
 * N/A
 
 ### Correção de Erro
-* [bugfix/clientes-1](https://github.com/evandrodezuani/torque/issues/26) - Adicionado repository que não foi mesclado
+* [bugfix/clientes-1](https://github.com/evandrodezuani/torque/issues/26) - Adicionado repository que não foi mesclado.
 
 ### Atualização de Dependências
 * N/A
