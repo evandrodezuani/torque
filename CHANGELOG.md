@@ -5,6 +5,7 @@
 
 ### Nova Funcionalidade
 * [feature/atendimento-2](https://github.com/evandrodezuani/torque/issues/6) - Abrir OS pela API gravando no PostgreSQL
+* [feature/cadastro-1](https://github.com/evandrodezuani/torque/issues/13) - CRUD de clientes (`/clientes`) com validação de CPF e CNPJ, inclusive o CNPJ alfanumérico
 
 ### Melhoria
 * N/A

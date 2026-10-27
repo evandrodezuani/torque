@@ -3,9 +3,10 @@ package br.com.autosoft.torque.infrastructure.atendimento.persistence;
 import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
 import org.springframework.stereotype.Repository;
 
-import br.com.autosoft.torque.domain.atendimento.model.Orcamento;
 import br.com.autosoft.torque.domain.atendimento.model.OrdemServico;
 import lombok.RequiredArgsConstructor;
+
+import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
@@ -18,6 +19,11 @@ class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 		jpaRepository.save(paraEntity(ordemServico));
 	}
 
+	@Override
+	public boolean existePorCliente(UUID clienteId) {
+		return jpaRepository.existsByClienteId(clienteId);
+	}
+
 	private OrdemServicoEntity paraEntity(OrdemServico os) {
 		var entity = new OrdemServicoEntity();
 		entity.setId(os.getId());
@@ -28,8 +34,8 @@ class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 		entity.setExecucaoIniciadaEm(os.getExecucaoIniciadaEm());
 		entity.setExecucaoConcluidaEm(os.getExecucaoConcluidaEm());
 		entity.setEntregueEm(os.getEntregueEm());
-		for (Orcamento orcamento : os.getOrcamentos()) {
-			OrcamentoEntity orcamentoEntity = new OrcamentoEntity();
+		for (var orcamento : os.getOrcamentos()) {
+			var orcamentoEntity = new OrcamentoEntity();
 			orcamentoEntity.setOrdemServico(entity);
 			orcamentoEntity.setNumero(orcamento.getNumero());
 			orcamentoEntity.setSituacao(orcamento.getSituacao());
