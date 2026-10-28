@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
 import br.com.autosoft.torque.domain.cadastro.model.Placa;
+import br.com.autosoft.torque.domain.cadastro.model.TipoVeiculo;
 import br.com.autosoft.torque.domain.cadastro.model.Veiculo;
 import br.com.autosoft.torque.domain.cadastro.repository.ClienteRepository;
 import br.com.autosoft.torque.domain.cadastro.repository.VeiculoRepository;
@@ -24,13 +25,13 @@ public class VeiculoService {
     private final OrdemServicoRepository ordemServicoRepository;
 
     @Transactional
-    public Veiculo cadastrar(UUID clienteId, String placa, String marca, String modelo, int ano) {
+    public Veiculo cadastrar(UUID clienteId, String placa, TipoVeiculo tipo, String marca, String modelo, int ano) {
         exigirCliente(clienteId);
         var placaDoVeiculo = new Placa(placa);
         if (repository.existePorPlaca(placaDoVeiculo)) {
             throw new RegraDeNegocioException("Já existe veículo com esta placa");
         }
-        var veiculo = Veiculo.cadastrar(clienteId, placaDoVeiculo, marca, modelo, ano);
+        var veiculo = Veiculo.cadastrar(clienteId, placaDoVeiculo, tipo, marca, modelo, ano);
         repository.salvar(veiculo);
         return veiculo;
     }
@@ -47,9 +48,10 @@ public class VeiculoService {
     }
 
     @Transactional
-    public Veiculo alterar(UUID clienteId, UUID veiculoId, String placa, String marca, String modelo, int ano) {
+    public Veiculo alterar(UUID clienteId, UUID veiculoId, String placa, TipoVeiculo tipo, String marca, String modelo,
+                           int ano) {
         var veiculo = consultar(clienteId, veiculoId);
-        veiculo.alterar(new Placa(placa), marca, modelo, ano);
+        veiculo.alterar(new Placa(placa), tipo, marca, modelo, ano);
         repository.salvar(veiculo);
         return veiculo;
     }

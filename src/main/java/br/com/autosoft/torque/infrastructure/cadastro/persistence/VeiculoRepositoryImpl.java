@@ -52,6 +52,7 @@ class VeiculoRepositoryImpl implements VeiculoRepository {
         entity.setId(veiculo.getId());
         entity.setClienteId(veiculo.getClienteId());
         entity.setPlaca(veiculo.getPlaca().numero());
+        entity.setTipo(veiculo.getTipo());
         entity.setMarca(veiculo.getMarca());
         entity.setModelo(veiculo.getModelo());
         entity.setAno(veiculo.getAno());
@@ -59,8 +60,8 @@ class VeiculoRepositoryImpl implements VeiculoRepository {
     }
 
     private Veiculo paraDominio(VeiculoEntity entity) {
-        return new Veiculo(entity.getId(), entity.getClienteId(), new Placa(entity.getPlaca()), entity.getMarca(),
-                entity.getModelo(), entity.getAno());
+        return new Veiculo(entity.getId(), entity.getClienteId(), new Placa(entity.getPlaca()), entity.getTipo(),
+                entity.getMarca(), entity.getModelo(), entity.getAno());
     }
 
 }

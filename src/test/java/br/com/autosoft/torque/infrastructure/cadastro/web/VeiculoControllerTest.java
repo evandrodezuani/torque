@@ -33,6 +33,7 @@ class VeiculoControllerTest {
     private static final String MOTO = """
 			{
 			  "placa": "bra-2e19",
+			  "tipo": "MOTO",
 			  "marca": "Honda",
 			  "modelo": "CG 160",
 			  "ano": 2022
@@ -45,11 +46,21 @@ class VeiculoControllerTest {
     @Test
     void cadastraEListaOsVeiculosDoCliente() throws Exception {
         cadastrar(MOTO);
-        cadastrar(MOTO.replace("bra-2e19", "ABC1234").replace("CG 160", "Uno").replace("Honda", "Fiat"));
+        cadastrar(MOTO.replace("bra-2e19", "ABC1234").replace("MOTO", "CARRO").replace("CG 160", "Uno")
+                .replace("Honda", "Fiat"));
 
         mockMvc.perform(get(VEICULOS_DA_MARIA))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[?(@.placa == 'BRA2E19')].tipo").value("MOTO"))
+                .andExpect(jsonPath("$[?(@.placa == 'ABC1234')].tipo").value("CARRO"));
+    }
+
+    @Test
+    void recusaVeiculoSemTipo() throws Exception {
+        mockMvc.perform(post(VEICULOS_DA_MARIA).contentType(MediaType.APPLICATION_JSON)
+                        .content(MOTO.replace("\"tipo\": \"MOTO\",", "")))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

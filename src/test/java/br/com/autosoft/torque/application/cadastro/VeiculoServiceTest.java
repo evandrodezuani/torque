@@ -18,6 +18,7 @@ import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoReposito
 import br.com.autosoft.torque.domain.cadastro.model.Cliente;
 import br.com.autosoft.torque.domain.cadastro.model.Documento;
 import br.com.autosoft.torque.domain.cadastro.model.Placa;
+import br.com.autosoft.torque.domain.cadastro.model.TipoVeiculo;
 import br.com.autosoft.torque.domain.cadastro.model.Veiculo;
 import br.com.autosoft.torque.domain.cadastro.repository.ClienteRepository;
 import br.com.autosoft.torque.domain.cadastro.repository.VeiculoRepository;
@@ -32,13 +33,13 @@ class VeiculoServiceTest {
     private final VeiculoService veiculoService = new VeiculoService(repository, clienteRepository, ordemServicoRepository);
 
     private final Cliente maria = Cliente.cadastrar(new Documento("529.982.247-25"), "Maria Souza", "maria@email.com", null);
-    private final Veiculo moto = Veiculo.cadastrar(maria.getId(), new Placa("BRA2E19"), "Honda", "CG 160", 2022);
+    private final Veiculo moto = Veiculo.cadastrar(maria.getId(), new Placa("BRA2E19"), TipoVeiculo.MOTO, "Honda", "CG 160", 2022);
 
     @Test
     void cadastraOVeiculoDoCliente() {
         when(clienteRepository.buscarPorId(maria.getId())).thenReturn(Optional.of(maria));
 
-        var veiculo = veiculoService.cadastrar(maria.getId(), "abc-1234", "Fiat", "Uno", 2010);
+        var veiculo = veiculoService.cadastrar(maria.getId(), "abc-1234", TipoVeiculo.CARRO, "Fiat", "Uno", 2010);
 
         assertThat(veiculo.getPlaca()).isEqualTo(new Placa("ABC1234"));
         verify(repository).salvar(veiculo);
@@ -49,7 +50,7 @@ class VeiculoServiceTest {
         var id = UUID.randomUUID();
         when(clienteRepository.buscarPorId(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> veiculoService.cadastrar(id, "ABC1234", "Fiat", "Uno", 2010))
+        assertThatThrownBy(() -> veiculoService.cadastrar(id, "ABC1234", TipoVeiculo.CARRO, "Fiat", "Uno", 2010))
                 .isInstanceOf(NaoEncontradoException.class)
                 .hasMessage("Cliente não encontrado");
         verify(repository, never()).salvar(any());
@@ -60,7 +61,7 @@ class VeiculoServiceTest {
         when(clienteRepository.buscarPorId(maria.getId())).thenReturn(Optional.of(maria));
         when(repository.existePorPlaca(new Placa("ABC1234"))).thenReturn(true);
 
-        assertThatThrownBy(() -> veiculoService.cadastrar(maria.getId(), "ABC-1234", "Fiat", "Uno", 2010))
+        assertThatThrownBy(() -> veiculoService.cadastrar(maria.getId(), "ABC-1234", TipoVeiculo.CARRO, "Fiat", "Uno", 2010))
                 .isInstanceOf(RegraDeNegocioException.class)
                 .hasMessage("Já existe veículo com esta placa");
     }

@@ -11,6 +11,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 
 import br.com.autosoft.torque.domain.cadastro.model.Placa;
+import br.com.autosoft.torque.domain.cadastro.model.TipoVeiculo;
 import br.com.autosoft.torque.domain.cadastro.model.Veiculo;
 import br.com.autosoft.torque.domain.cadastro.repository.VeiculoRepository;
 
@@ -30,7 +31,7 @@ class VeiculoRepositoryImplTest {
 
     @Test
     void salvaEBuscaOVeiculoDeVolta() {
-        var moto = Veiculo.cadastrar(MARIA, new Placa("BRA2E19"), "Honda", "CG 160", 2022);
+        var moto = Veiculo.cadastrar(MARIA, new Placa("BRA2E19"), TipoVeiculo.MOTO, "Honda", "CG 160", 2022);
 
         repository.salvar(moto);
         var lido = repository.buscarPorId(moto.getId()).orElseThrow();
@@ -43,16 +44,16 @@ class VeiculoRepositoryImplTest {
 
     @Test
     void listaSoOsVeiculosDoCliente() {
-        repository.salvar(Veiculo.cadastrar(MARIA, new Placa("BRA2E19"), "Honda", "CG 160", 2022));
-        repository.salvar(Veiculo.cadastrar(MARIA, new Placa("ABC-1234"), "Fiat", "Uno", 2010));
-        repository.salvar(Veiculo.cadastrar(OUTRO_CLIENTE, new Placa("XYZ9K87"), "Ford", "Ranger", 2024));
+        repository.salvar(Veiculo.cadastrar(MARIA, new Placa("BRA2E19"), TipoVeiculo.MOTO, "Honda", "CG 160", 2022));
+        repository.salvar(Veiculo.cadastrar(MARIA, new Placa("ABC-1234"), TipoVeiculo.CARRO, "Fiat", "Uno", 2010));
+        repository.salvar(Veiculo.cadastrar(OUTRO_CLIENTE, new Placa("XYZ9K87"), TipoVeiculo.CARRO, "Ford", "Ranger", 2024));
 
         assertThat(repository.listarPorCliente(MARIA)).hasSize(2);
     }
 
     @Test
     void sabeSeAPlacaJaFoiCadastrada() {
-        repository.salvar(Veiculo.cadastrar(MARIA, new Placa("BRA2E19"), "Honda", "CG 160", 2022));
+        repository.salvar(Veiculo.cadastrar(MARIA, new Placa("BRA2E19"), TipoVeiculo.MOTO, "Honda", "CG 160", 2022));
 
         assertThat(repository.existePorPlaca(new Placa("bra2e19"))).isTrue();
         assertThat(repository.existePorPlaca(new Placa("ABC1234"))).isFalse();
@@ -60,9 +61,9 @@ class VeiculoRepositoryImplTest {
 
     @Test
     void removeTodosOsVeiculosDoCliente() {
-        repository.salvar(Veiculo.cadastrar(MARIA, new Placa("BRA2E19"), "Honda", "CG 160", 2022));
-        repository.salvar(Veiculo.cadastrar(MARIA, new Placa("ABC-1234"), "Fiat", "Uno", 2010));
-        repository.salvar(Veiculo.cadastrar(OUTRO_CLIENTE, new Placa("XYZ9K87"), "Ford", "Ranger", 2024));
+        repository.salvar(Veiculo.cadastrar(MARIA, new Placa("BRA2E19"), TipoVeiculo.MOTO, "Honda", "CG 160", 2022));
+        repository.salvar(Veiculo.cadastrar(MARIA, new Placa("ABC-1234"), TipoVeiculo.CARRO, "Fiat", "Uno", 2010));
+        repository.salvar(Veiculo.cadastrar(OUTRO_CLIENTE, new Placa("XYZ9K87"), TipoVeiculo.CARRO, "Ford", "Ranger", 2024));
 
         repository.removerPorCliente(MARIA);
 

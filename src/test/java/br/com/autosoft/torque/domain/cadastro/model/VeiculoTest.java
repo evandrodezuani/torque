@@ -16,7 +16,7 @@ class VeiculoTest {
 
     @Test
     void cadastraVeiculoDoCliente() {
-        var veiculo = Veiculo.cadastrar(clienteId, placa, "Honda", "CG 160", 2022);
+        var veiculo = Veiculo.cadastrar(clienteId, placa, TipoVeiculo.MOTO, "Honda", "CG 160", 2022);
 
         assertThat(veiculo.getId()).isNotNull();
         assertThat(veiculo.getClienteId()).isEqualTo(clienteId);
@@ -25,30 +25,33 @@ class VeiculoTest {
     }
 
     @Test
-    void naoCadastraSemClienteMarcaOuModelo() {
-        assertThatThrownBy(() -> Veiculo.cadastrar(null, placa, "Honda", "CG 160", 2022))
+    void naoCadastraSemClienteTipoMarcaOuModelo() {
+        assertThatThrownBy(() -> Veiculo.cadastrar(null, placa, TipoVeiculo.MOTO, "Honda", "CG 160", 2022))
                 .isInstanceOf(RegraDeNegocioException.class);
-        assertThatThrownBy(() -> Veiculo.cadastrar(clienteId, placa, " ", "CG 160", 2022))
+        assertThatThrownBy(() -> Veiculo.cadastrar(clienteId, placa, null, "Honda", "CG 160", 2022))
+                .isInstanceOf(RegraDeNegocioException.class)
+                .hasMessage("O tipo de veículo é obrigatório");
+        assertThatThrownBy(() -> Veiculo.cadastrar(clienteId, placa, TipoVeiculo.MOTO, " ", "CG 160", 2022))
                 .isInstanceOf(RegraDeNegocioException.class);
-        assertThatThrownBy(() -> Veiculo.cadastrar(clienteId, placa, "Honda", null, 2022))
+        assertThatThrownBy(() -> Veiculo.cadastrar(clienteId, placa, TipoVeiculo.MOTO, "Honda", null, 2022))
                 .isInstanceOf(RegraDeNegocioException.class);
     }
 
     @Test
     void recusaAnoForaDoIntervalo() {
-        assertThatThrownBy(() -> Veiculo.cadastrar(clienteId, placa, "Honda", "CG 160", 1899))
+        assertThatThrownBy(() -> Veiculo.cadastrar(clienteId, placa, TipoVeiculo.MOTO, "Honda", "CG 160", 1899))
                 .isInstanceOf(RegraDeNegocioException.class)
                 .hasMessage("Ano inválido");
-        assertThatThrownBy(() -> Veiculo.cadastrar(clienteId, placa, "Honda", "CG 160", 3000))
+        assertThatThrownBy(() -> Veiculo.cadastrar(clienteId, placa, TipoVeiculo.MOTO, "Honda", "CG 160", 3000))
                 .isInstanceOf(RegraDeNegocioException.class)
                 .hasMessage("Ano inválido");
     }
 
     @Test
     void alteraMarcaModeloEAno() {
-        var veiculo = Veiculo.cadastrar(clienteId, placa, "Honda", "CG 160", 2022);
+        var veiculo = Veiculo.cadastrar(clienteId, placa, TipoVeiculo.MOTO, "Honda", "CG 160", 2022);
 
-        veiculo.alterar(new Placa("bra-2e19"), "Honda", "CG 160 Titan", 2023);
+        veiculo.alterar(new Placa("bra-2e19"), TipoVeiculo.MOTO, "Honda", "CG 160 Titan", 2023);
 
         assertThat(veiculo.getModelo()).isEqualTo("CG 160 Titan");
         assertThat(veiculo.getAno()).isEqualTo(2023);
@@ -56,11 +59,20 @@ class VeiculoTest {
 
     @Test
     void naoAlteraAPlaca() {
-        var veiculo = Veiculo.cadastrar(clienteId, placa, "Honda", "CG 160", 2022);
+        var veiculo = Veiculo.cadastrar(clienteId, placa, TipoVeiculo.MOTO, "Honda", "CG 160", 2022);
 
-        assertThatThrownBy(() -> veiculo.alterar(new Placa("ABC1234"), "Honda", "CG 160", 2022))
+        assertThatThrownBy(() -> veiculo.alterar(new Placa("ABC1234"), TipoVeiculo.MOTO, "Honda", "CG 160", 2022))
                 .isInstanceOf(RegraDeNegocioException.class)
                 .hasMessage("A placa não pode ser alterada");
+    }
+
+    @Test
+    void naoAlteraOTipo() {
+        var veiculo = Veiculo.cadastrar(clienteId, placa, TipoVeiculo.MOTO, "Honda", "CG 160", 2022);
+
+        assertThatThrownBy(() -> veiculo.alterar(placa, TipoVeiculo.CARRO, "Honda", "CG 160", 2022))
+                .isInstanceOf(RegraDeNegocioException.class)
+                .hasMessage("O tipo de veículo não pode ser alterado");
     }
 
 }
