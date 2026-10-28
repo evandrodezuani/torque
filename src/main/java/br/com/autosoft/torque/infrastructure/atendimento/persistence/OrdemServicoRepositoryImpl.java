@@ -1,5 +1,6 @@
 package br.com.autosoft.torque.infrastructure.atendimento.persistence;
 
+import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
 import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -20,8 +21,23 @@ class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 	}
 
 	@Override
-	public boolean existePorCliente(UUID clienteId) {
-		return jpaRepository.existsByClienteId(clienteId);
+	public boolean existeEmAndamentoPorCliente(UUID clienteId) {
+		return jpaRepository.existsByClienteIdAndStatusNot(clienteId, StatusOS.ENTREGUE);
+	}
+
+	@Override
+	public boolean existeEmAndamentoPorVeiculo(UUID veiculoId) {
+		return jpaRepository.existsByVeiculoIdAndStatusNot(veiculoId, StatusOS.ENTREGUE);
+	}
+
+	@Override
+	public void removerPorCliente(UUID clienteId) {
+		jpaRepository.deleteByClienteId(clienteId);
+	}
+
+	@Override
+	public void removerPorVeiculo(UUID veiculoId) {
+		jpaRepository.deleteByVeiculoId(veiculoId);
 	}
 
 	private OrdemServicoEntity paraEntity(OrdemServico os) {

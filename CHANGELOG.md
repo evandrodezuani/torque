@@ -4,7 +4,7 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
-* N/A
+* [feature/cadastro-veiculo](https://github.com/evandrodezuani/torque/issues/14) - CRUD de veículos do cliente, com validação de placa antiga e Mercosul
 
 ### Melhoria
 * N/A

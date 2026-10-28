@@ -3,6 +3,7 @@ package br.com.autosoft.torque.application.cadastro;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -12,6 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
+import br.com.autosoft.torque.domain.cadastro.repository.VeiculoRepository;
 import org.junit.jupiter.api.Test;
 
 import br.com.autosoft.torque.domain.cadastro.model.Cliente;
@@ -24,7 +26,8 @@ class ClienteServiceTest {
 
 	private final ClienteRepository repository = mock(ClienteRepository.class);
 	private final OrdemServicoRepository ordemServicoRepository = mock(OrdemServicoRepository.class);
-	private final ClienteService clienteService = new ClienteService(repository, ordemServicoRepository );
+	private final VeiculoRepository veiculoRepository = mock(VeiculoRepository.class);
+	private final ClienteService clienteService = new ClienteService(repository,ordemServicoRepository, veiculoRepository);
 
 	private final Cliente mockClient = Cliente.cadastrar(new Documento("529.982.247-25"), "Maria Souza", "maria@email.com", null);
 
@@ -67,22 +70,25 @@ class ClienteServiceTest {
 	}
 
 	@Test
-	void naoRemoveClienteComOrdemDeServico() {
+	void naoRemoveClienteComOrdemDeServicoEmAndamento() {
 		when(repository.buscarPorId(mockClient.getId())).thenReturn(Optional.of(mockClient));
-		when(ordemServicoRepository.existePorCliente(mockClient.getId())).thenReturn(true);
+		when(ordemServicoRepository.existeEmAndamentoPorCliente(mockClient.getId())).thenReturn(true);
 
 		assertThatThrownBy(() -> clienteService.remover(mockClient.getId()))
 				.isInstanceOf(RegraDeNegocioException.class)
-				.hasMessage("O cliente tem ordens de serviço e não pode ser removido");
+				.hasMessage("O cliente tem ordens de serviço em andamento e não pode ser removido");
 		verify(repository, never()).remover(any());
 	}
 
 	@Test
-	void removeClienteSemOrdemDeServico() {
+	void removeOClienteComOHistorico() {
 		when(repository.buscarPorId(mockClient.getId())).thenReturn(Optional.of(mockClient));
 
 		clienteService.remover(mockClient.getId());
 
-		verify(repository).remover(mockClient.getId());
+		var ordem = inOrder(ordemServicoRepository, veiculoRepository, repository);
+		ordem.verify(ordemServicoRepository).removerPorCliente(mockClient.getId());
+		ordem.verify(veiculoRepository).removerPorCliente(mockClient.getId());
+		ordem.verify(repository).remover(mockClient.getId());
 	}
 }

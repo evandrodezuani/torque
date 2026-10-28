@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
+import br.com.autosoft.torque.domain.cadastro.repository.VeiculoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ public class ClienteService {
 
 	private final ClienteRepository repository;
 	private final OrdemServicoRepository ordemServicoRepository;
+	private final VeiculoRepository veiculoRepository;
 
 	@Transactional
 	public Cliente cadastrar(String documento, String nome, String email, String telefone) {
@@ -52,9 +54,11 @@ public class ClienteService {
 	@Transactional
 	public void remover(UUID id) {
 		consultar(id);
-		if (ordemServicoRepository.existePorCliente(id)) {
-			throw new RegraDeNegocioException("O cliente tem ordens de serviço e não pode ser removido");
+		if (ordemServicoRepository.existeEmAndamentoPorCliente(id)) {
+			throw new RegraDeNegocioException("O cliente tem ordens de serviço em andamento e não pode ser removido");
 		}
+		ordemServicoRepository.removerPorCliente(id);
+		veiculoRepository.removerPorCliente(id);
 		repository.remover(id);
 	}
 
