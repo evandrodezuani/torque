@@ -18,6 +18,23 @@
 ### Atualização de banco de dados
 * N/A
 
+## [0.2.0] - 2026-10-27
+
+### Nova Funcionalidade
+* [feature/cadastro-veiculo](https://github.com/evandrodezuani/torque/issues/14) - CRUD de veículos do cliente, com validação de placa antiga e Mercosul
+
+### Melhoria
+* N/A
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
 ## [0.1.2] - 2026-10-27
 
 ### Nova Funcionalidade

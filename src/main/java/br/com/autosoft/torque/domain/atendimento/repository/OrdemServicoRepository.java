@@ -8,6 +8,12 @@ public interface OrdemServicoRepository {
 
     void salvar(OrdemServico ordemServico);
 
-    boolean existePorCliente(UUID clienteId);
+    boolean existeEmAndamentoPorCliente(UUID clienteId);
+
+    boolean existeEmAndamentoPorVeiculo(UUID veiculoId);
+
+    void removerPorCliente(UUID clienteId);
+
+    void removerPorVeiculo(UUID veiculoId);
 
 }
