@@ -91,7 +91,18 @@ jobs:
           git push origin "HEAD:$BRANCH"
 
       - name: Mesclar o Pull Request
-        run: gh pr merge "$PR" --squash --match-head-commit "$(git rev-parse HEAD)"
+        run: |
+          esperado=$(git rev-parse HEAD)
+          for tentativa in 1 2 3 4 5 6; do
+            atual=$(gh pr view "$PR" --json headRefOid --jq .headRefOid)
+            if [ "$atual" = "$esperado" ] && gh pr merge "$PR" --squash --match-head-commit "$esperado"; then
+              exit 0
+            fi
+            echo "O GitHub ainda não registrou o último commit; nova tentativa em 5 segundos"
+            sleep 5
+          done
+          echo "::error::Não foi possível mesclar o Pull Request"
+          exit 1
 
       - name: Criar a tag e a release
         run: |
