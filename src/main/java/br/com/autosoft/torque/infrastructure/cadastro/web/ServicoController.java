@@ -27,23 +27,23 @@ class ServicoController {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	ServicoResponse cadastrar(@RequestBody @Valid CadastrarServicoRequest request) {
+	public ServicoResponse cadastrar(@RequestBody @Valid CadastrarServicoRequest request) {
 		var servico = servicoService.cadastrar(request.tipoServicoId(), request.tipoVeiculo(), request.preco());
 		return ServicoResponse.paraResposta(servico);
 	}
 
 	@GetMapping
-	List<ServicoResponse> listar() {
+	public List<ServicoResponse> listar() {
 		return servicoService.listar().stream().map(ServicoResponse::paraResposta).toList();
 	}
 
 	@GetMapping("/{id}")
-	ServicoResponse consultar(@PathVariable UUID id) {
+	public ServicoResponse consultar(@PathVariable UUID id) {
 		return ServicoResponse.paraResposta(servicoService.consultar(id));
 	}
 
 	@PutMapping("/{id}")
-	ServicoResponse alterar(@PathVariable UUID id, @RequestBody @Valid AlterarServicoRequest request) {
+	public ServicoResponse alterar(@PathVariable UUID id, @RequestBody @Valid AlterarServicoRequest request) {
 		var servico = servicoService.alterar(id, request.tipoServicoId(), request.tipoVeiculo(), request.preco(),
 				request.ativo());
 		return ServicoResponse.paraResposta(servico);
@@ -51,7 +51,7 @@ class ServicoController {
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	void remover(@PathVariable UUID id) {
+	public void remover(@PathVariable UUID id) {
 		servicoService.remover(id);
 	}
 

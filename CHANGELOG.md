@@ -18,6 +18,23 @@
 ### Atualização de banco de dados
 * N/A
 
+## [0.4.0] - 2026-10-29
+
+### Nova Funcionalidade
+* [feature/estoque-1](https://github.com/evandrodezuani/torque/issues/15) - CRUD de estoque
+
+### Melhoria
+* N/A
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
 ## [0.3.0] - 2026-10-29
 
 ### Nova Funcionalidade

@@ -27,30 +27,30 @@ class ClienteController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    ClienteResponse cadastrar(@RequestBody @Valid ClienteRequest request) {
+    public ClienteResponse cadastrar(@RequestBody @Valid ClienteRequest request) {
         var cliente = clienteService.cadastrar(request.documento(), request.nome(), request.email(), request.telefone());
         return ClienteResponse.paraResposta(cliente);
     }
 
     @GetMapping("/{id}")
-    ClienteResponse consultar(@PathVariable UUID id) {
+    public ClienteResponse consultar(@PathVariable UUID id) {
         return ClienteResponse.paraResposta(clienteService.consultar(id));
     }
 
     @GetMapping
-    List<ClienteResponse> listar() {
+    public List<ClienteResponse> listar() {
         return clienteService.listar().stream().map(ClienteResponse::paraResposta).toList();
     }
 
     @PutMapping("/{id}")
-    ClienteResponse alterar(@PathVariable UUID id, @RequestBody @Valid ClienteRequest request) {
+    public ClienteResponse alterar(@PathVariable UUID id, @RequestBody @Valid ClienteRequest request) {
         var cliente = clienteService.alterar(id, request.documento(), request.nome(), request.email(), request.telefone());
         return ClienteResponse.paraResposta(cliente);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void remover(@PathVariable UUID id) {
+    public void remover(@PathVariable UUID id) {
         clienteService.remover(id);
     }
 
