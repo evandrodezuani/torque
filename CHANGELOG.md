@@ -4,6 +4,23 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
+* N/A
+
+### Melhoria
+* N/A
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
+## [0.3.0] - 2026-10-29
+
+### Nova Funcionalidade
 * [feature/cadastro-servicos](https://github.com/evandrodezuani/torque/issues/15) - CRUD de serviço e tipo de serviços
 
 ### Melhoria
