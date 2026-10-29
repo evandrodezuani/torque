@@ -27,24 +27,24 @@ class VeiculoController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    VeiculoResponse cadastrar(@PathVariable UUID clienteId, @RequestBody @Valid VeiculoRequest request) {
+    public VeiculoResponse cadastrar(@PathVariable UUID clienteId, @RequestBody @Valid VeiculoRequest request) {
         var veiculo = veiculoService.cadastrar(clienteId, request.placa(), request.tipo(), request.marca(),
                 request.modelo(), request.ano());
         return VeiculoResponse.paraResposta(veiculo);
     }
 
     @GetMapping
-    List<VeiculoResponse> listar(@PathVariable UUID clienteId) {
+    public List<VeiculoResponse> listar(@PathVariable UUID clienteId) {
         return veiculoService.listar(clienteId).stream().map(VeiculoResponse::paraResposta).toList();
     }
 
     @GetMapping("/{veiculoId}")
-    VeiculoResponse consultar(@PathVariable UUID clienteId, @PathVariable UUID veiculoId) {
+    public VeiculoResponse consultar(@PathVariable UUID clienteId, @PathVariable UUID veiculoId) {
         return VeiculoResponse.paraResposta(veiculoService.consultar(clienteId, veiculoId));
     }
 
     @PutMapping("/{veiculoId}")
-    VeiculoResponse alterar(@PathVariable UUID clienteId, @PathVariable UUID veiculoId,
+    public VeiculoResponse alterar(@PathVariable UUID clienteId, @PathVariable UUID veiculoId,
                             @RequestBody @Valid VeiculoRequest request) {
         var veiculo = veiculoService.alterar(clienteId, veiculoId, request.placa(), request.tipo(), request.marca(),
                 request.modelo(), request.ano());
@@ -53,7 +53,7 @@ class VeiculoController {
 
     @DeleteMapping("/{veiculoId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void remover(@PathVariable UUID clienteId, @PathVariable UUID veiculoId) {
+    public void remover(@PathVariable UUID clienteId, @PathVariable UUID veiculoId) {
         veiculoService.remover(clienteId, veiculoId);
     }
 

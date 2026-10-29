@@ -27,28 +27,28 @@ class TipoServicoController {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	TipoServicoResponse cadastrar(@RequestBody @Valid TipoServicoRequest request) {
+	public TipoServicoResponse cadastrar(@RequestBody @Valid TipoServicoRequest request) {
 		return TipoServicoResponse.paraResposta(tipoServicoService.cadastrar(request.descricao()));
 	}
 
 	@GetMapping
-	List<TipoServicoResponse> listar() {
+	public List<TipoServicoResponse> listar() {
 		return tipoServicoService.listar().stream().map(TipoServicoResponse::paraResposta).toList();
 	}
 
 	@GetMapping("/{id}")
-	TipoServicoResponse consultar(@PathVariable UUID id) {
+	public TipoServicoResponse consultar(@PathVariable UUID id) {
 		return TipoServicoResponse.paraResposta(tipoServicoService.consultar(id));
 	}
 
 	@PutMapping("/{id}")
-	TipoServicoResponse alterar(@PathVariable UUID id, @RequestBody @Valid TipoServicoRequest request) {
+	public TipoServicoResponse alterar(@PathVariable UUID id, @RequestBody @Valid TipoServicoRequest request) {
 		return TipoServicoResponse.paraResposta(tipoServicoService.alterar(id, request.descricao()));
 	}
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	void remover(@PathVariable UUID id) {
+	public void remover(@PathVariable UUID id) {
 		tipoServicoService.remover(id);
 	}
 

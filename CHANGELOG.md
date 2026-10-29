@@ -4,7 +4,7 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
-* N/A
+* [feature/estoque-1](https://github.com/evandrodezuani/torque/issues/15) - CRUD de estoque
 
 ### Melhoria
 * N/A
