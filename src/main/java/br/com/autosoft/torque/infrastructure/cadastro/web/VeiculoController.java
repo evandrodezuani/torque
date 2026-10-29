@@ -28,7 +28,8 @@ class VeiculoController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     VeiculoResponse cadastrar(@PathVariable UUID clienteId, @RequestBody @Valid VeiculoRequest request) {
-        var veiculo = veiculoService.cadastrar(clienteId, request.placa(), request.marca(), request.modelo(), request.ano());
+        var veiculo = veiculoService.cadastrar(clienteId, request.placa(), request.tipo(), request.marca(),
+                request.modelo(), request.ano());
         return VeiculoResponse.paraResposta(veiculo);
     }
 
@@ -45,8 +46,8 @@ class VeiculoController {
     @PutMapping("/{veiculoId}")
     VeiculoResponse alterar(@PathVariable UUID clienteId, @PathVariable UUID veiculoId,
                             @RequestBody @Valid VeiculoRequest request) {
-        var veiculo = veiculoService.alterar(clienteId, veiculoId, request.placa(), request.marca(), request.modelo(),
-                request.ano());
+        var veiculo = veiculoService.alterar(clienteId, veiculoId, request.placa(), request.tipo(), request.marca(),
+                request.modelo(), request.ano());
         return VeiculoResponse.paraResposta(veiculo);
     }
 

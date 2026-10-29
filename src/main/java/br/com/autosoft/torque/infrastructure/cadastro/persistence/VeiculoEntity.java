@@ -2,7 +2,10 @@ package br.com.autosoft.torque.infrastructure.cadastro.persistence;
 
 import java.util.UUID;
 
+import br.com.autosoft.torque.domain.cadastro.model.TipoVeiculo;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -20,6 +23,9 @@ class VeiculoEntity {
 	private UUID clienteId;
 
 	private String placa;
+
+	@Enumerated(EnumType.STRING)
+	private TipoVeiculo tipo;
 
 	private String marca;
 
