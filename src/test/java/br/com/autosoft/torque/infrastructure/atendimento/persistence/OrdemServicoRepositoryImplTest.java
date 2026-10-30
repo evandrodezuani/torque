@@ -106,6 +106,40 @@ class OrdemServicoRepositoryImplTest {
     }
 
     @Test
+    void listaFiltrandoPeloStatusEOrdenandoPelaAbertura() {
+        var primeira = OrdemServico.abrir(CLIENTE_ID, VEICULO_ID, Instant.parse("2026-10-12T10:00:00Z"));
+        var segunda = OrdemServico.abrir(CLIENTE_ID, VEICULO_ID, Instant.parse("2026-10-12T11:00:00Z"));
+        segunda.iniciarDiagnostico();
+        var terceira = OrdemServico.abrir(CLIENTE_ID, VEICULO_ID, Instant.parse("2026-10-12T12:00:00Z"));
+        repository.salvar(segunda);
+        repository.salvar(terceira);
+        repository.salvar(primeira);
+        recarregarDoBanco();
+
+        assertThat(repository.listar(null, true)).extracting(OrdemServico::getId)
+                .containsExactly(primeira.getId(), segunda.getId(), terceira.getId());
+        assertThat(repository.listar(null, false)).extracting(OrdemServico::getId)
+                .containsExactly(terceira.getId(), segunda.getId(), primeira.getId());
+        assertThat(repository.listar(StatusOS.RECEBIDA, true)).extracting(OrdemServico::getId)
+                .containsExactly(primeira.getId(), terceira.getId());
+    }
+
+    @Test
+    void sabeSeOServicoEOItemJaForamUsadosEmOrcamento() {
+        var os = OrdemServico.abrir(CLIENTE_ID, VEICULO_ID, Instant.parse("2026-10-12T10:00:00Z"));
+        os.iniciarDiagnostico();
+        os.incluirServico(TROCA_DE_OLEO);
+        os.incluirPeca(OLEO);
+        repository.salvar(os);
+        recarregarDoBanco();
+
+        assertThat(repository.existeComServico(SERVICO_ID)).isTrue();
+        assertThat(repository.existeComItemEstoque(ITEM_ESTOQUE_ID)).isTrue();
+        assertThat(repository.existeComServico(UUID.randomUUID())).isFalse();
+        assertThat(repository.existeComItemEstoque(UUID.randomUUID())).isFalse();
+    }
+
+    @Test
     void osRecebidaContaComoEmAndamento() {
         repository.salvar(OrdemServico.abrir(CLIENTE_ID, VEICULO_ID, Instant.parse("2026-10-12T10:00:00Z")));
 

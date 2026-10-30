@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
 import br.com.autosoft.torque.domain.cadastro.model.Servico;
 import br.com.autosoft.torque.domain.cadastro.model.TipoServico;
 import br.com.autosoft.torque.domain.cadastro.model.TipoVeiculo;
@@ -27,7 +28,9 @@ class ServicoServiceTest {
 
 	private final ServicoRepository repository = mock(ServicoRepository.class);
 	private final TipoServicoRepository tipoServicoRepository = mock(TipoServicoRepository.class);
-	private final ServicoService servicoService = new ServicoService(repository, tipoServicoRepository);
+	private final OrdemServicoRepository ordemServicoRepository = mock(OrdemServicoRepository.class);
+	private final ServicoService servicoService = new ServicoService(repository, tipoServicoRepository,
+			ordemServicoRepository);
 
 	private final TipoServico trocaDeOleo = TipoServico.cadastrar("Troca de óleo");
 
@@ -71,6 +74,18 @@ class ServicoServiceTest {
 
 		assertThat(servico.isAtivo()).isFalse();
 		verify(repository).salvar(servico);
+	}
+
+	@Test
+	void naoRemoveServicoJaUsadoEmOrcamento() {
+		var servico = Servico.cadastrar(trocaDeOleo.getId(), TipoVeiculo.CARRO, Dinheiro.de("80.00"));
+		when(repository.buscarPorId(servico.getId())).thenReturn(Optional.of(servico));
+		when(ordemServicoRepository.existeComServico(servico.getId())).thenReturn(true);
+
+		assertThatThrownBy(() -> servicoService.remover(servico.getId()))
+				.isInstanceOf(RegraDeNegocioException.class)
+				.hasMessage("O serviço já foi usado em orçamentos e não pode ser removido");
+		verify(repository, never()).remover(any());
 	}
 
 }

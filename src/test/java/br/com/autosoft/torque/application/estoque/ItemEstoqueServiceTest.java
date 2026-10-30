@@ -14,6 +14,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
 import br.com.autosoft.torque.domain.estoque.model.ItemEstoque;
 import br.com.autosoft.torque.domain.estoque.model.TipoItemEstoque;
 import br.com.autosoft.torque.domain.estoque.repository.ItemEstoqueRepository;
@@ -24,7 +25,8 @@ import br.com.autosoft.torque.domain.shared.RegraDeNegocioException;
 class ItemEstoqueServiceTest {
 
 	private final ItemEstoqueRepository repository = mock(ItemEstoqueRepository.class);
-	private final ItemEstoqueService itemEstoqueService = new ItemEstoqueService(repository);
+	private final OrdemServicoRepository ordemServicoRepository = mock(OrdemServicoRepository.class);
+	private final ItemEstoqueService itemEstoqueService = new ItemEstoqueService(repository, ordemServicoRepository);
 
 	@Test
 	void cadastraOItem() {
@@ -75,6 +77,18 @@ class ItemEstoqueServiceTest {
 		assertThatThrownBy(() -> itemEstoqueService.remover(item.getId()))
 				.isInstanceOf(RegraDeNegocioException.class)
 				.hasMessage("O item tem quantidade reservada e não pode ser removido");
+		verify(repository, never()).remover(any());
+	}
+
+	@Test
+	void naoRemoveItemJaUsadoEmOrcamento() {
+		var item = ItemEstoque.cadastrar(TipoItemEstoque.PECA, "Filtro de óleo", Dinheiro.de("35.00"));
+		when(repository.buscarPorId(item.getId())).thenReturn(Optional.of(item));
+		when(ordemServicoRepository.existeComItemEstoque(item.getId())).thenReturn(true);
+
+		assertThatThrownBy(() -> itemEstoqueService.remover(item.getId()))
+				.isInstanceOf(RegraDeNegocioException.class)
+				.hasMessage("O item já foi usado em orçamentos e não pode ser removido");
 		verify(repository, never()).remover(any());
 	}
 

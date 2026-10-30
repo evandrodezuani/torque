@@ -3,6 +3,7 @@ package br.com.autosoft.torque.domain.atendimento.model;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -131,9 +132,16 @@ public class OrdemServico {
 		this.execucaoConcluidaEm = agora;
 	}
 
+	/**
+	 * Entrega depois do serviço (Finalizada) ou devolução sem execução (Recebida, Em diagnóstico ou
+	 * Rejeitada). Com o orçamento aguardando aprovação há estoque reservado, e em execução o estoque
+	 * já foi baixado, por isso esses dois status não entregam.
+	 */
 	public void entregarVeiculo(Instant agora) {
-		if (status != StatusOS.FINALIZADA && status != StatusOS.REJEITADA) {
-			throw new TransicaoInvalidaException("Só é possível entregar o veículo de uma OS finalizada ou rejeitada");
+		var statusPodeEntregar = EnumSet.of(StatusOS.FINALIZADA, StatusOS.REJEITADA, StatusOS.RECEBIDA, StatusOS.EM_DIAGNOSTICO);
+		if (!statusPodeEntregar .contains(status)) {
+			throw new TransicaoInvalidaException(
+					"Só é possível entregar o veículo de uma OS recebida, em diagnóstico, rejeitada ou finalizada");
 		}
 		this.status = StatusOS.ENTREGUE;
 		this.entregueEm = agora;

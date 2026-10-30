@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.autosoft.torque.domain.atendimento.model.ItemPeca;
 import br.com.autosoft.torque.domain.atendimento.model.ItemServico;
 import br.com.autosoft.torque.domain.atendimento.model.OrdemServico;
+import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
 import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
 import br.com.autosoft.torque.domain.cadastro.repository.ClienteRepository;
 import br.com.autosoft.torque.domain.cadastro.repository.ServicoRepository;
@@ -56,8 +57,8 @@ public class OrdemServicoService {
 				.orElseThrow(() -> new NaoEncontradoException("Ordem de serviço não encontrada"));
 	}
 
-	public List<OrdemServico> listar() {
-		return repository.listar();
+	public List<OrdemServico> listar(StatusOS status, boolean maisAntigasPrimeiro) {
+		return repository.listar(status, maisAntigasPrimeiro);
 	}
 
 	@Transactional
@@ -160,6 +161,22 @@ public class OrdemServicoService {
 	public OrdemServico revisarOrcamento(UUID id) {
 		var ordemServico = consultar(id);
 		ordemServico.revisarOrcamento();
+		repository.salvar(ordemServico);
+		return ordemServico;
+	}
+
+	@Transactional
+	public OrdemServico concluirServico(UUID id) {
+		var ordemServico = consultar(id);
+		ordemServico.concluirServico(Instant.now());
+		repository.salvar(ordemServico);
+		return ordemServico;
+	}
+
+	@Transactional
+	public OrdemServico entregarVeiculo(UUID id) {
+		var ordemServico = consultar(id);
+		ordemServico.entregarVeiculo(Instant.now());
 		repository.salvar(ordemServico);
 		return ordemServico;
 	}
