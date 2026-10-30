@@ -8,6 +8,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,6 +35,7 @@ public class OrdemServicoEntity {
 	private Instant execucaoConcluidaEm;
 	private Instant entregueEm;
 	@OneToMany(mappedBy = "ordemServico", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OrderBy("numero")
 	private List<OrcamentoEntity> orcamentos = new ArrayList<OrcamentoEntity>();
 
 }
