@@ -4,6 +4,23 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
+* N/A
+
+### Melhoria
+* N/A
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
+## [0.6.0] - 2026-10-29
+
+### Nova Funcionalidade
 * [feature/atendimento-8](https://github.com/evandrodezuani/torque/issues/18) - Aprovar o orçamento (inicia a execução e baixa o estoque), rejeitar (libera a reserva) e revisar o orçamento rejeitado
 
 ### Melhoria
