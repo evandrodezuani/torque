@@ -31,6 +31,11 @@ public record ItemServico(UUID servicoId, String descricao, Dinheiro precoUnitar
 	}
 
 	@Override
+	public ItemServico comPreco(Dinheiro precoUnitario) {
+		return new ItemServico(servicoId, descricao, precoUnitario, quantidade);
+	}
+
+	@Override
 	public Dinheiro subtotal() {
 		return precoUnitario.multiplicar(quantidade);
 	}

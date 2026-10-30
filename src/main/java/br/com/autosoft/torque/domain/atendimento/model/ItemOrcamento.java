@@ -13,7 +13,11 @@ public interface ItemOrcamento<T extends ItemOrcamento<T>> {
 
 	int quantidade();
 
+	Dinheiro precoUnitario();
+
 	T somar(int quantidade);
+
+	T comPreco(Dinheiro precoUnitario);
 
 	Dinheiro subtotal();
 

@@ -3,6 +3,7 @@ package br.com.autosoft.torque.infrastructure.atendimento.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 import br.com.autosoft.torque.domain.atendimento.model.ItemPeca;
@@ -91,7 +92,7 @@ class OrdemServicoRepositoryImplTest {
         recarregarDoBanco();
 
         var lida = repository.buscarPorId(os.getId()).orElseThrow();
-        lida.concluirDiagnostico(Instant.parse("2026-10-12T11:00:00Z"));
+        lida.concluirDiagnostico(Instant.parse("2026-10-12T11:00:00Z"), Map.of());
         lida.rejeitarOrcamento(Instant.parse("2026-10-12T12:00:00Z"));
         lida.revisarOrcamento();
         repository.salvar(lida);
@@ -132,7 +133,7 @@ class OrdemServicoRepositoryImplTest {
         var os = OrdemServico.abrir(CLIENTE_ID, VEICULO_ID, Instant.parse("2026-10-12T10:00:00Z"));
         os.iniciarDiagnostico();
         os.incluirServico(TROCA_DE_OLEO);
-        os.concluirDiagnostico(Instant.parse("2026-10-12T11:00:00Z"));
+        os.concluirDiagnostico(Instant.parse("2026-10-12T11:00:00Z"), Map.of());
         os.aprovarOrcamento(Instant.parse("2026-10-12T12:00:00Z"));
         os.concluirServico(Instant.parse("2026-10-12T15:00:00Z"));
         os.entregarVeiculo(Instant.parse("2026-10-12T17:00:00Z"));

@@ -3,6 +3,7 @@ package br.com.autosoft.torque.domain.atendimento.model;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -65,11 +66,13 @@ public class Orcamento {
 		remover(itensPeca, itemEstoqueId, "Peça ou insumo não encontrado no orçamento");
 	}
 
-	void enviar(Instant agora) {
+	void enviar(Instant agora, Map<UUID, Dinheiro> precosAtuais) {
 		exigirSituacao(SituacaoOrcamento.EM_ELABORACAO);
 		if (itensServico.isEmpty() && itensPeca.isEmpty()) {
 			throw new RegraDeNegocioException("O orçamento precisa de pelo menos um serviço ou peça");
 		}
+		atualizarPrecos(itensServico, precosAtuais);
+		atualizarPrecos(itensPeca, precosAtuais);
 		this.situacao = SituacaoOrcamento.PENDENTE;
 		this.enviadoEm = agora;
 	}
@@ -116,6 +119,10 @@ public class Orcamento {
 		if (!itens.removeIf(item -> item.referencia().equals(referencia))) {
 			throw new NaoEncontradoException(mensagem);
 		}
+	}
+
+	private <T extends ItemOrcamento<T>> void atualizarPrecos(List<T> itens, Map<UUID, Dinheiro> precosAtuais) {
+		itens.replaceAll(item -> item.comPreco(precosAtuais.getOrDefault(item.referencia(), item.precoUnitario())));
 	}
 
 	private void exigirSituacao(SituacaoOrcamento esperada) {

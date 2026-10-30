@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,7 @@ class OrdemServicoTest {
 		assertThat(os.getStatus()).isEqualTo(StatusOS.EM_DIAGNOSTICO);
 
 		os.incluirServico(trocaDeOleo);
-		os.concluirDiagnostico(AGORA);
+		os.concluirDiagnostico(AGORA, Map.of());
 		assertThat(os.getStatus()).isEqualTo(StatusOS.AGUARDANDO_APROVACAO);
 
 		os.aprovarOrcamento(AGORA);
@@ -76,17 +77,34 @@ class OrdemServicoTest {
 		var os = osEmDiagnostico();
 		os.incluirServico(trocaDeOleo);
 
-		os.concluirDiagnostico(AGORA);
+		os.concluirDiagnostico(AGORA, Map.of());
 
 		assertThat(os.orcamentoAtual().getSituacao()).isEqualTo(SituacaoOrcamento.PENDENTE);
 		assertThat(os.orcamentoAtual().getEnviadoEm()).isEqualTo(AGORA);
 	}
 
 	@Test
+	void envioUsaOPrecoVigenteEMantemADescricao() {
+		var os = osEmDiagnostico();
+		os.incluirServico(trocaDeOleo);
+		os.incluirPeca(filtro);
+
+		os.concluirDiagnostico(AGORA, Map.of(
+				trocaDeOleo.servicoId(), Dinheiro.de("90.00"),
+				filtro.itemEstoqueId(), Dinheiro.de("40.00")));
+
+		assertThat(os.orcamentoAtual().getItensServico())
+				.containsExactly(new ItemServico(trocaDeOleo.servicoId(), "Troca de óleo", Dinheiro.de("90.00"), 1));
+		assertThat(os.orcamentoAtual().getItensPeca())
+				.containsExactly(new ItemPeca(filtro.itemEstoqueId(), "Filtro de óleo", Dinheiro.de("40.00"), 1));
+		assertThat(os.orcamentoAtual().total()).isEqualTo(Dinheiro.de("130.00"));
+	}
+
+	@Test
 	void naoConcluiDiagnosticoComOrcamentoVazio() {
 		var os = osEmDiagnostico();
 
-		assertThatThrownBy(() -> os.concluirDiagnostico(AGORA)).isInstanceOf(RegraDeNegocioException.class);
+		assertThatThrownBy(() -> os.concluirDiagnostico(AGORA, Map.of())).isInstanceOf(RegraDeNegocioException.class);
 		assertThat(os.getStatus()).isEqualTo(StatusOS.EM_DIAGNOSTICO);
 	}
 
@@ -199,7 +217,7 @@ class OrdemServicoTest {
 		var os = osEmDiagnostico();
 		os.incluirServico(trocaDeOleo);
 		os.incluirPeca(filtro);
-		os.concluirDiagnostico(AGORA);
+		os.concluirDiagnostico(AGORA, Map.of());
 		os.rejeitarOrcamento(AGORA);
 
 		os.revisarOrcamento();
@@ -242,7 +260,7 @@ class OrdemServicoTest {
 	@Test
 	void transicoesForaDeOrdemSaoRecusadasEMantemOStatus() {
 		var recebida = novaOS();
-		assertThatThrownBy(() -> recebida.concluirDiagnostico(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
+		assertThatThrownBy(() -> recebida.concluirDiagnostico(AGORA, Map.of())).isInstanceOf(TransicaoInvalidaException.class);
 		assertThatThrownBy(() -> recebida.aprovarOrcamento(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
 		assertThatThrownBy(() -> recebida.rejeitarOrcamento(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
 		assertThatThrownBy(() -> recebida.concluirServico(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
@@ -292,7 +310,7 @@ class OrdemServicoTest {
 	private OrdemServico osAguardandoAprovacao() {
 		var os = osEmDiagnostico();
 		os.incluirServico(trocaDeOleo);
-		os.concluirDiagnostico(AGORA);
+		os.concluirDiagnostico(AGORA, Map.of());
 		return os;
 	}
 

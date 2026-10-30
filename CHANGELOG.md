@@ -4,7 +4,7 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
-* N/A
+* [feature/atendimento-8](https://github.com/evandrodezuani/torque/issues/18) - Aprovar o orçamento (inicia a execução e baixa o estoque), rejeitar (libera a reserva) e revisar o orçamento rejeitado
 
 ### Melhoria
 * N/A

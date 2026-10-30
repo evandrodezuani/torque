@@ -4,9 +4,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import br.com.autosoft.torque.domain.shared.Dinheiro;
 import br.com.autosoft.torque.domain.shared.RegraDeNegocioException;
 
 import lombok.Getter;
@@ -84,11 +86,15 @@ public class OrdemServico {
 		orcamentoAtual().removerPeca(itemEstoqueId);
 	}
 
-	public void concluirDiagnostico(Instant agora) {
+	/**
+	 * Envia o orçamento com os preços vigentes no catálogo, pela referência de cada linha.
+	 * Uma linha sem preço no mapa mantém o preço da inclusão.
+	 */
+	public void concluirDiagnostico(Instant agora, Map<UUID, Dinheiro> precosAtuais) {
 		if (status != StatusOS.EM_DIAGNOSTICO) {
 			throw new TransicaoInvalidaException("Só é possível concluir o diagnóstico de uma OS em diagnóstico");
 		}
-		orcamentoAtual().enviar(agora);
+		orcamentoAtual().enviar(agora, precosAtuais);
 		this.status = StatusOS.AGUARDANDO_APROVACAO;
 	}
 

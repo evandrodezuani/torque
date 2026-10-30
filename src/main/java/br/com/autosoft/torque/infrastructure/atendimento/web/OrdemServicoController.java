@@ -73,4 +73,19 @@ class OrdemServicoController {
 		return OrdemServicoResponse.paraResposta(ordemServicoService.concluirDiagnostico(id));
 	}
 
+	@PostMapping("/{id}/aprovar-orcamento")
+	public OrdemServicoResponse aprovarOrcamento(@PathVariable UUID id) {
+		return OrdemServicoResponse.paraResposta(ordemServicoService.aprovarOrcamento(id));
+	}
+
+	@PostMapping("/{id}/rejeitar-orcamento")
+	public OrdemServicoResponse rejeitarOrcamento(@PathVariable UUID id) {
+		return OrdemServicoResponse.paraResposta(ordemServicoService.rejeitarOrcamento(id));
+	}
+
+	@PostMapping("/{id}/revisar-orcamento")
+	public OrdemServicoResponse revisarOrcamento(@PathVariable UUID id) {
+		return OrdemServicoResponse.paraResposta(ordemServicoService.revisarOrcamento(id));
+	}
+
 }
