@@ -6,6 +6,7 @@ import br.com.autosoft.torque.domain.atendimento.model.Orcamento;
 import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
 import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
 import br.com.autosoft.torque.domain.shared.Dinheiro;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,8 +36,10 @@ class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<OrdemServico> listar() {
-		return jpaRepository.findAll().stream().map(this::paraDominio).toList();
+	public List<OrdemServico> listar(StatusOS status, boolean maisAntigasPrimeiro) {
+		var ordem = Sort.by(maisAntigasPrimeiro ? Sort.Direction.ASC : Sort.Direction.DESC, "abertaEm");
+		var entities = status == null ? jpaRepository.findAll(ordem) : jpaRepository.findByStatus(status, ordem);
+		return entities.stream().map(this::paraDominio).toList();
 	}
 
 	@Override
@@ -47,6 +50,16 @@ class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 	@Override
 	public boolean existeEmAndamentoPorVeiculo(UUID veiculoId) {
 		return jpaRepository.existsByVeiculoIdAndStatusNot(veiculoId, StatusOS.ENTREGUE);
+	}
+
+	@Override
+	public boolean existeComServico(UUID servicoId) {
+		return jpaRepository.existsByOrcamentosItensServicoServicoId(servicoId);
+	}
+
+	@Override
+	public boolean existeComItemEstoque(UUID itemEstoqueId) {
+		return jpaRepository.existsByOrcamentosItensPecaItemEstoqueId(itemEstoqueId);
 	}
 
 	@Override

@@ -3,6 +3,7 @@ package br.com.autosoft.torque.infrastructure.atendimento.web;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,10 +11,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.autosoft.torque.application.atendimento.OrdemServicoService;
+import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -32,8 +35,11 @@ class OrdemServicoController {
 	}
 
 	@GetMapping
-	public List<OrdemServicoResponse> listar() {
-		return ordemServicoService.listar().stream().map(OrdemServicoResponse::paraResposta).toList();
+	public List<OrdemServicoResponse> listar(@RequestParam(required = false) StatusOS status,
+			@RequestParam(defaultValue = "DESC") Sort.Direction ordem) {
+		return ordemServicoService.listar(status, ordem.isAscending()).stream()
+				.map(OrdemServicoResponse::paraResposta)
+				.toList();
 	}
 
 	@GetMapping("/{id}")
@@ -71,6 +77,16 @@ class OrdemServicoController {
 	@PostMapping("/{id}/concluir-diagnostico")
 	public OrdemServicoResponse concluirDiagnostico(@PathVariable UUID id) {
 		return OrdemServicoResponse.paraResposta(ordemServicoService.concluirDiagnostico(id));
+	}
+
+	@PostMapping("/{id}/concluir-servico")
+	public OrdemServicoResponse concluirServico(@PathVariable UUID id) {
+		return OrdemServicoResponse.paraResposta(ordemServicoService.concluirServico(id));
+	}
+
+	@PostMapping("/{id}/entregar-veiculo")
+	public OrdemServicoResponse entregarVeiculo(@PathVariable UUID id) {
+		return OrdemServicoResponse.paraResposta(ordemServicoService.entregarVeiculo(id));
 	}
 
 	@PostMapping("/{id}/aprovar-orcamento")

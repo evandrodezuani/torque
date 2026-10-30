@@ -351,6 +351,81 @@ class OrdemServicoControllerTest {
                 .andExpect(jsonPath("$.detail").value("Só é possível aprovar o orçamento de uma OS aguardando aprovação"));
     }
 
+    @Test
+    void concluiOServicoEEntregaOVeiculo() throws Exception {
+        var id = abrirComOrcamentoEnviado();
+        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento")).andExpect(status().isOk());
+
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-servico"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("FINALIZADA"));
+
+        mockMvc.perform(post("/ordens-servico/" + id + "/entregar-veiculo"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ENTREGUE"));
+    }
+
+    @Test
+    void devolveOVeiculoAntesDoOrcamento() throws Exception {
+        var id = abrirEmDiagnostico();
+        incluirPeca(id, OLEO_10W30, 2);
+
+        mockMvc.perform(post("/ordens-servico/" + id + "/entregar-veiculo"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ENTREGUE"));
+    }
+
+    @Test
+    void naoEntregaOVeiculoComOServicoEmExecucao() throws Exception {
+        var id = abrirComOrcamentoEnviado();
+        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento")).andExpect(status().isOk());
+
+        mockMvc.perform(post("/ordens-servico/" + id + "/entregar-veiculo"))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.detail")
+                        .value("Só é possível entregar o veículo de uma OS recebida, em diagnóstico, rejeitada ou finalizada"));
+    }
+
+    @Test
+    void naoConcluiOServicoAntesDaAprovacao() throws Exception {
+        var id = abrirComOrcamentoEnviado();
+
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-servico"))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.detail").value("Só é possível concluir o serviço de uma OS em execução"));
+    }
+
+    @Test
+    void filtraAListaPeloStatus() throws Exception {
+        var recebida = abrir();
+        abrirEmDiagnostico();
+
+        mockMvc.perform(get("/ordens-servico").param("status", "RECEBIDA").param("ordem", "ASC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(recebida));
+    }
+
+    @Test
+    void recusaStatusOuOrdemDesconhecidos() throws Exception {
+        mockMvc.perform(get("/ordens-servico").param("status", "PARADA")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/ordens-servico").param("ordem", "aleatoria")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void naoRemoveServicoNemItemJaUsadosEmOrcamento() throws Exception {
+        var id = abrirEmDiagnostico();
+        incluirServico(id, TROCA_DE_OLEO_MOTO, 1);
+        incluirPeca(id, OLEO_10W30, 1);
+
+        mockMvc.perform(delete("/servicos/" + TROCA_DE_OLEO_MOTO))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.detail").value("O serviço já foi usado em orçamentos e não pode ser removido"));
+        mockMvc.perform(delete("/itens-estoque/" + OLEO_10W30))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.detail").value("O item já foi usado em orçamentos e não pode ser removido"));
+    }
+
     private String abrirComOrcamentoEnviado() throws Exception {
         var id = abrirEmDiagnostico();
         incluirServico(id, TROCA_DE_OLEO_MOTO, 1);

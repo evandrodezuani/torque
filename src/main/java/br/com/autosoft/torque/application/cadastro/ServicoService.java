@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
 import br.com.autosoft.torque.domain.cadastro.model.Servico;
 import br.com.autosoft.torque.domain.cadastro.model.TipoVeiculo;
 import br.com.autosoft.torque.domain.cadastro.repository.ServicoRepository;
@@ -22,6 +23,7 @@ public class ServicoService {
 
 	private final ServicoRepository repository;
 	private final TipoServicoRepository tipoServicoRepository;
+	private final OrdemServicoRepository ordemServicoRepository;
 
 	@Transactional
 	public Servico cadastrar(UUID tipoServicoId, TipoVeiculo tipoVeiculo, BigDecimal preco) {
@@ -56,6 +58,9 @@ public class ServicoService {
 	@Transactional
 	public void remover(UUID id) {
 		consultar(id);
+		if (ordemServicoRepository.existeComServico(id)) {
+			throw new RegraDeNegocioException("O serviço já foi usado em orçamentos e não pode ser removido");
+		}
 		repository.remover(id);
 	}
 

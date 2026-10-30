@@ -4,7 +4,7 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
-* N/A
+* [feature/atendimento-9](https://github.com/evandrodezuani/torque/issues/19) - Finalizar serviço e entregar o veículo, devolução antes do orçamento
 
 ### Melhoria
 * N/A

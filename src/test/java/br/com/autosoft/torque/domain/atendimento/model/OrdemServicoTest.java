@@ -264,13 +264,38 @@ class OrdemServicoTest {
 		assertThatThrownBy(() -> recebida.aprovarOrcamento(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
 		assertThatThrownBy(() -> recebida.rejeitarOrcamento(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
 		assertThatThrownBy(() -> recebida.concluirServico(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
-		assertThatThrownBy(() -> recebida.entregarVeiculo(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
 		assertThat(recebida.getStatus()).isEqualTo(StatusOS.RECEBIDA);
 
 		var aguardando = osAguardandoAprovacao();
 		assertThatThrownBy(aguardando::iniciarDiagnostico).isInstanceOf(TransicaoInvalidaException.class);
 		assertThatThrownBy(() -> aguardando.concluirServico(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
 		assertThat(aguardando.getStatus()).isEqualTo(StatusOS.AGUARDANDO_APROVACAO);
+	}
+
+	@Test
+	void veiculoPodeSerDevolvidoAntesDoOrcamento() {
+		var recebida = novaOS();
+		recebida.entregarVeiculo(AGORA);
+		assertThat(recebida.getStatus()).isEqualTo(StatusOS.ENTREGUE);
+
+		var emDiagnostico = osEmDiagnostico();
+		emDiagnostico.incluirPeca(filtro);
+		emDiagnostico.entregarVeiculo(AGORA);
+		assertThat(emDiagnostico.getStatus()).isEqualTo(StatusOS.ENTREGUE);
+		assertThat(emDiagnostico.tempoDeExecucao()).isEmpty();
+	}
+
+	@Test
+	void naoEntregaComOrcamentoAguardandoAprovacaoNemEmExecucao() {
+		var aguardando = osAguardandoAprovacao();
+		assertThatThrownBy(() -> aguardando.entregarVeiculo(AGORA))
+				.isInstanceOf(TransicaoInvalidaException.class)
+				.hasMessage("Só é possível entregar o veículo de uma OS recebida, em diagnóstico, rejeitada ou finalizada");
+
+		var emExecucao = osAguardandoAprovacao();
+		emExecucao.aprovarOrcamento(AGORA);
+		assertThatThrownBy(() -> emExecucao.entregarVeiculo(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
+		assertThat(emExecucao.getStatus()).isEqualTo(StatusOS.EM_EXECUCAO);
 	}
 
 	@Test
