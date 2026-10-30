@@ -4,6 +4,23 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
+* N/A
+
+### Melhoria
+* N/A
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
+## [0.5.0] - 2026-10-29
+
+### Nova Funcionalidade
 * [feature/atendimento-7](https://github.com/evandrodezuani/torque/issues/17) - CRUD orçamento, iniciar o diagnóstico, incluir e remover serviços e peças e concluir o diagnóstico
 
 ### Melhoria
