@@ -1,8 +1,10 @@
 package br.com.autosoft.torque.application.atendimento;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +17,9 @@ import br.com.autosoft.torque.domain.cadastro.repository.ClienteRepository;
 import br.com.autosoft.torque.domain.cadastro.repository.ServicoRepository;
 import br.com.autosoft.torque.domain.cadastro.repository.TipoServicoRepository;
 import br.com.autosoft.torque.domain.cadastro.repository.VeiculoRepository;
+import br.com.autosoft.torque.domain.estoque.model.ItemEstoque;
 import br.com.autosoft.torque.domain.estoque.repository.ItemEstoqueRepository;
+import br.com.autosoft.torque.domain.shared.Dinheiro;
 import br.com.autosoft.torque.domain.shared.NaoEncontradoException;
 import br.com.autosoft.torque.domain.shared.RegraDeNegocioException;
 import lombok.RequiredArgsConstructor;
@@ -114,16 +118,58 @@ public class OrdemServicoService {
 	@Transactional
 	public OrdemServico concluirDiagnostico(UUID id) {
 		var ordemServico = consultar(id);
-		ordemServico.concluirDiagnostico(Instant.now());
 
-		for (var peca : ordemServico.orcamentoAtual().getItensPeca()) {
-			var item = itemEstoqueRepository.buscarPorId(peca.itemEstoqueId()).orElseThrow();
-			item.reservar(peca.quantidade());
-			itemEstoqueRepository.salvar(item);
+		var precosAtuais = new HashMap<UUID, Dinheiro>();
+		for (var linha : ordemServico.orcamentoAtual().getItensServico()) {
+			var servico = servicoRepository.buscarPorId(linha.servicoId()).orElseThrow();
+			if (!servico.isAtivo()) {
+				throw new RegraDeNegocioException("O serviço " + linha.descricao() + " está inativo");
+			}
+			precosAtuais.put(servico.getId(), servico.getPreco());
+		}
+		for (var linha : ordemServico.orcamentoAtual().getItensPeca()) {
+			var item = itemEstoqueRepository.buscarPorId(linha.itemEstoqueId()).orElseThrow();
+			precosAtuais.put(item.getId(), item.getPreco());
 		}
 
+		ordemServico.concluirDiagnostico(Instant.now(), precosAtuais);
+		movimentarEstoque(ordemServico, ItemEstoque::reservar);
 		repository.salvar(ordemServico);
 		return ordemServico;
+	}
+
+	@Transactional
+	public OrdemServico aprovarOrcamento(UUID id) {
+		var ordemServico = consultar(id);
+		ordemServico.aprovarOrcamento(Instant.now());
+		movimentarEstoque(ordemServico, ItemEstoque::baixar);
+		repository.salvar(ordemServico);
+		return ordemServico;
+	}
+
+	@Transactional
+	public OrdemServico rejeitarOrcamento(UUID id) {
+		var ordemServico = consultar(id);
+		ordemServico.rejeitarOrcamento(Instant.now());
+		movimentarEstoque(ordemServico, ItemEstoque::liberarReserva);
+		repository.salvar(ordemServico);
+		return ordemServico;
+	}
+
+	@Transactional
+	public OrdemServico revisarOrcamento(UUID id) {
+		var ordemServico = consultar(id);
+		ordemServico.revisarOrcamento();
+		repository.salvar(ordemServico);
+		return ordemServico;
+	}
+
+	private void movimentarEstoque(OrdemServico ordemServico, BiConsumer<ItemEstoque, Integer> movimento) {
+		for (var peca : ordemServico.orcamentoAtual().getItensPeca()) {
+			var item = itemEstoqueRepository.buscarPorId(peca.itemEstoqueId()).orElseThrow();
+			movimento.accept(item, peca.quantidade());
+			itemEstoqueRepository.salvar(item);
+		}
 	}
 
 }

@@ -32,6 +32,11 @@ public record ItemPeca(UUID itemEstoqueId, String descricao, Dinheiro precoUnita
 	}
 
 	@Override
+	public ItemPeca comPreco(Dinheiro precoUnitario) {
+		return new ItemPeca(itemEstoqueId, descricao, precoUnitario, quantidade);
+	}
+
+	@Override
 	public Dinheiro subtotal() {
 		return precoUnitario.multiplicar(quantidade);
 	}

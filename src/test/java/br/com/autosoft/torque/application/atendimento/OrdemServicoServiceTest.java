@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -190,6 +191,99 @@ class OrdemServicoServiceTest {
 				.isInstanceOf(RegraDeNegocioException.class)
 				.hasMessage("Estoque insuficiente para Filtro de óleo");
 		verify(repository, never()).salvar(any());
+	}
+
+	@Test
+	void concluiODiagnosticoComOPrecoAtualDoCatalogo() {
+		var ordemServico = osEmDiagnostico();
+		var servico = Servico.cadastrar(trocaDeOleo.getId(), TipoVeiculo.MOTO, Dinheiro.de("50.00"));
+		ordemServico.incluirServico(new ItemServico(servico.getId(), "Troca de óleo", Dinheiro.de("50.00"), 1));
+		servico.alterar(trocaDeOleo.getId(), TipoVeiculo.MOTO, Dinheiro.de("65.00"), true);
+		when(servicoRepository.buscarPorId(servico.getId())).thenReturn(Optional.of(servico));
+
+		ordemServicoService.concluirDiagnostico(ordemServico.getId());
+
+		assertThat(ordemServico.orcamentoAtual().getItensServico().getFirst().precoUnitario())
+				.isEqualTo(Dinheiro.de("65.00"));
+	}
+
+	@Test
+	void naoConcluiODiagnosticoComServicoInativado() {
+		var ordemServico = osEmDiagnostico();
+		var servico = Servico.cadastrar(trocaDeOleo.getId(), TipoVeiculo.MOTO, Dinheiro.de("50.00"));
+		ordemServico.incluirServico(new ItemServico(servico.getId(), "Troca de óleo", Dinheiro.de("50.00"), 1));
+		servico.alterar(trocaDeOleo.getId(), TipoVeiculo.MOTO, Dinheiro.de("50.00"), false);
+		when(servicoRepository.buscarPorId(servico.getId())).thenReturn(Optional.of(servico));
+
+		assertThatThrownBy(() -> ordemServicoService.concluirDiagnostico(ordemServico.getId()))
+				.isInstanceOf(RegraDeNegocioException.class)
+				.hasMessage("O serviço Troca de óleo está inativo");
+		assertThat(ordemServico.getStatus()).isEqualTo(StatusOS.EM_DIAGNOSTICO);
+		verify(repository, never()).salvar(any());
+	}
+
+	@Test
+	void aprovarIniciaAExecucaoEBaixaOEstoque() {
+		var oleo = oleoComSaldo(10);
+		var ordemServico = osAguardandoAprovacao(oleo);
+
+		ordemServicoService.aprovarOrcamento(ordemServico.getId());
+
+		assertThat(ordemServico.getStatus()).isEqualTo(StatusOS.EM_EXECUCAO);
+		assertThat(oleo.getSaldo()).isEqualTo(8);
+		assertThat(oleo.getReservado()).isZero();
+		verify(itemEstoqueRepository).salvar(oleo);
+		verify(repository).salvar(ordemServico);
+	}
+
+	@Test
+	void rejeitarLiberaAReservaSemMexerNoSaldo() {
+		var oleo = oleoComSaldo(10);
+		var ordemServico = osAguardandoAprovacao(oleo);
+
+		ordemServicoService.rejeitarOrcamento(ordemServico.getId());
+
+		assertThat(ordemServico.getStatus()).isEqualTo(StatusOS.REJEITADA);
+		assertThat(oleo.getSaldo()).isEqualTo(10);
+		assertThat(oleo.getReservado()).isZero();
+		verify(repository).salvar(ordemServico);
+	}
+
+	@Test
+	void revisarCriaOOrcamentoSeguinte() {
+		var oleo = oleoComSaldo(10);
+		var ordemServico = osAguardandoAprovacao(oleo);
+		ordemServicoService.rejeitarOrcamento(ordemServico.getId());
+
+		ordemServicoService.revisarOrcamento(ordemServico.getId());
+
+		assertThat(ordemServico.getStatus()).isEqualTo(StatusOS.EM_DIAGNOSTICO);
+		assertThat(ordemServico.orcamentoAtual().getNumero()).isEqualTo(2);
+		assertThat(ordemServico.orcamentoAtual().getItensPeca()).hasSize(1);
+	}
+
+	@Test
+	void naoAprovaOrcamentoQueAindaNaoFoiEnviado() {
+		var ordemServico = osEmDiagnostico();
+
+		assertThatThrownBy(() -> ordemServicoService.aprovarOrcamento(ordemServico.getId()))
+				.isInstanceOf(TransicaoInvalidaException.class);
+		verify(repository, never()).salvar(any());
+	}
+
+	private ItemEstoque oleoComSaldo(int saldo) {
+		var oleo = ItemEstoque.cadastrar(TipoItemEstoque.INSUMO, "Óleo 10W30 1 L", Dinheiro.de("38.00"));
+		oleo.registrarEntrada(saldo);
+		when(itemEstoqueRepository.buscarPorId(oleo.getId())).thenReturn(Optional.of(oleo));
+		return oleo;
+	}
+
+	private OrdemServico osAguardandoAprovacao(ItemEstoque oleo) {
+		var ordemServico = osEmDiagnostico();
+		ordemServico.incluirPeca(new ItemPeca(oleo.getId(), "Óleo 10W30 1 L", Dinheiro.de("38.00"), 2));
+		ordemServico.concluirDiagnostico(Instant.now(), Map.of());
+		oleo.reservar(2);
+		return ordemServico;
 	}
 
 	private OrdemServico osEmDiagnostico() {
