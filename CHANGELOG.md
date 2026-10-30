@@ -4,6 +4,23 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
+* N/A
+
+### Melhoria
+* N/A
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
+## [0.7.0] - 2026-10-29
+
+### Nova Funcionalidade
 * [feature/atendimento-9](https://github.com/evandrodezuani/torque/issues/19) - Finalizar serviço e entregar o veículo, devolução antes do orçamento
 
 ### Melhoria
