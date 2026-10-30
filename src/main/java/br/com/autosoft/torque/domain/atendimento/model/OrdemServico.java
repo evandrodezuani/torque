@@ -23,25 +23,30 @@ public class OrdemServico {
 	private final UUID veiculoId;
 	private final Instant abertaEm;
 	private final List<Orcamento> orcamentos = new ArrayList<>();
-	private StatusOS status = StatusOS.RECEBIDA;
+	private StatusOS status;
 	private Instant execucaoIniciadaEm;
 	private Instant execucaoConcluidaEm;
 	private Instant entregueEm;
 
-	private OrdemServico(UUID id, UUID clienteId, UUID veiculoId, Instant abertaEm) {
+	public OrdemServico(UUID id, UUID clienteId, UUID veiculoId, Instant abertaEm, StatusOS status,
+			Instant execucaoIniciadaEm, Instant execucaoConcluidaEm, Instant entregueEm, List<Orcamento> orcamentos) {
 		this.id = id;
 		this.clienteId = clienteId;
 		this.veiculoId = veiculoId;
 		this.abertaEm = abertaEm;
+		this.status = status;
+		this.execucaoIniciadaEm = execucaoIniciadaEm;
+		this.execucaoConcluidaEm = execucaoConcluidaEm;
+		this.entregueEm = entregueEm;
+		this.orcamentos.addAll(orcamentos);
 	}
 
 	public static OrdemServico abrir(UUID clienteId, UUID veiculoId, Instant horaAtual) {
 		if (clienteId == null || veiculoId == null) {
 			throw new RegraDeNegocioException("Cliente e veículo são obrigatórios para abrir a OS");
 		}
-		OrdemServico os = new OrdemServico(UUID.randomUUID(), clienteId, veiculoId, horaAtual);
-		os.orcamentos.add(new Orcamento(1));
-		return os;
+		return new OrdemServico(UUID.randomUUID(), clienteId, veiculoId, horaAtual, StatusOS.RECEBIDA, null, null, null,
+				List.of(new Orcamento(1)));
 	}
 
 	public void iniciarDiagnostico() {
@@ -52,11 +57,31 @@ public class OrdemServico {
 	}
 
 	public void incluirServico(ItemServico item) {
+		if (status != StatusOS.EM_DIAGNOSTICO) {
+			throw new RegraDeNegocioException("Só é possível incluir serviços numa OS em diagnóstico");
+		}
 		orcamentoAtual().adicionar(item);
 	}
 
 	public void incluirPeca(ItemPeca item) {
+		if (status != StatusOS.EM_DIAGNOSTICO) {
+			throw new RegraDeNegocioException("Só é possível incluir peças e insumos numa OS em diagnóstico");
+		}
 		orcamentoAtual().adicionar(item);
+	}
+
+	public void removerServico(UUID servicoId) {
+		if (status != StatusOS.EM_DIAGNOSTICO) {
+			throw new RegraDeNegocioException("Só é possível remover serviços numa OS em diagnóstico");
+		}
+		orcamentoAtual().removerServico(servicoId);
+	}
+
+	public void removerPeca(UUID itemEstoqueId) {
+		if (status != StatusOS.EM_DIAGNOSTICO) {
+			throw new RegraDeNegocioException("Só é possível remover peças e insumos numa OS em diagnóstico");
+		}
+		orcamentoAtual().removerPeca(itemEstoqueId);
 	}
 
 	public void concluirDiagnostico(Instant agora) {

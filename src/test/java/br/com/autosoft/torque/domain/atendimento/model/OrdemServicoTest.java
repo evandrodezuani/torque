@@ -10,6 +10,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import br.com.autosoft.torque.domain.shared.Dinheiro;
+import br.com.autosoft.torque.domain.shared.NaoEncontradoException;
 import br.com.autosoft.torque.domain.shared.RegraDeNegocioException;
 
 class OrdemServicoTest {
@@ -22,7 +23,7 @@ class OrdemServicoTest {
 
 	@Test
 	void osAbertaNasceRecebidaComOrcamentoEmElaboracao() {
-		OrdemServico os = novaOS();
+		var os = novaOS();
 
 		assertThat(os.getStatus()).isEqualTo(StatusOS.RECEBIDA);
 		assertThat(os.getOrcamentos()).hasSize(1);
@@ -40,7 +41,7 @@ class OrdemServicoTest {
 
 	@Test
 	void fluxoCompletoPercorreTodosOsStatusAteEntregue() {
-		OrdemServico os = novaOS();
+		var os = novaOS();
 
 		os.iniciarDiagnostico();
 		assertThat(os.getStatus()).isEqualTo(StatusOS.EM_DIAGNOSTICO);
@@ -62,7 +63,7 @@ class OrdemServicoTest {
 
 	@Test
 	void orcamentoSomaServicosPecasEInsumos() {
-		OrdemServico os = osEmDiagnostico();
+		var os = osEmDiagnostico();
 		os.incluirServico(trocaDeOleo);
 		os.incluirPeca(filtro);
 		os.incluirPeca(oleo);
@@ -72,7 +73,7 @@ class OrdemServicoTest {
 
 	@Test
 	void concluirDiagnosticoEnviaOOrcamento() {
-		OrdemServico os = osEmDiagnostico();
+		var os = osEmDiagnostico();
 		os.incluirServico(trocaDeOleo);
 
 		os.concluirDiagnostico(AGORA);
@@ -83,15 +84,89 @@ class OrdemServicoTest {
 
 	@Test
 	void naoConcluiDiagnosticoComOrcamentoVazio() {
-		OrdemServico os = osEmDiagnostico();
+		var os = osEmDiagnostico();
 
 		assertThatThrownBy(() -> os.concluirDiagnostico(AGORA)).isInstanceOf(RegraDeNegocioException.class);
 		assertThat(os.getStatus()).isEqualTo(StatusOS.EM_DIAGNOSTICO);
 	}
 
 	@Test
+	void naoIncluiItemAntesDeIniciarODiagnostico() {
+		var os = novaOS();
+
+		assertThatThrownBy(() -> os.incluirServico(trocaDeOleo))
+				.isInstanceOf(RegraDeNegocioException.class)
+				.hasMessage("Só é possível incluir serviços numa OS em diagnóstico");
+		assertThatThrownBy(() -> os.incluirPeca(filtro))
+				.isInstanceOf(RegraDeNegocioException.class)
+				.hasMessage("Só é possível incluir peças e insumos numa OS em diagnóstico");
+		assertThat(os.orcamentoAtual().total()).isEqualTo(Dinheiro.ZERO);
+	}
+
+	@Test
+	void mesmoServicoIncluidoDeNovoSomaNaMesmaLinha() {
+		var os = osEmDiagnostico();
+		os.incluirServico(trocaDeOleo);
+
+		os.incluirServico(new ItemServico(trocaDeOleo.servicoId(), "Troca de óleo", Dinheiro.de("90.00"), 2));
+
+		assertThat(os.orcamentoAtual().getItensServico())
+				.containsExactly(new ItemServico(trocaDeOleo.servicoId(), "Troca de óleo", Dinheiro.de("80.00"), 3));
+	}
+
+	@Test
+	void mesmaPecaIncluidaDeNovoSomaNaMesmaLinha() {
+		var os = osEmDiagnostico();
+		os.incluirPeca(oleo);
+		os.incluirPeca(filtro);
+
+		os.incluirPeca(oleo);
+
+		assertThat(os.orcamentoAtual().getItensPeca()).containsExactly(oleo.somar(4), filtro);
+		assertThat(os.orcamentoAtual().total()).isEqualTo(Dinheiro.de("349.00"));
+	}
+
+	@Test
+	void removeALinhaDoOrcamento() {
+		var os = osEmDiagnostico();
+		os.incluirServico(trocaDeOleo);
+		os.incluirPeca(filtro);
+		os.incluirPeca(oleo);
+
+		os.removerPeca(oleo.itemEstoqueId());
+		os.removerServico(trocaDeOleo.servicoId());
+
+		assertThat(os.orcamentoAtual().getItensServico()).isEmpty();
+		assertThat(os.orcamentoAtual().getItensPeca()).containsExactly(filtro);
+		assertThat(os.orcamentoAtual().total()).isEqualTo(Dinheiro.de("45.00"));
+	}
+
+	@Test
+	void naoRemoveItemQueNaoEstaNoOrcamento() {
+		var os = osEmDiagnostico();
+		os.incluirPeca(filtro);
+
+		assertThatThrownBy(() -> os.removerPeca(oleo.itemEstoqueId()))
+				.isInstanceOf(NaoEncontradoException.class)
+				.hasMessage("Peça ou insumo não encontrado no orçamento");
+		assertThatThrownBy(() -> os.removerServico(trocaDeOleo.servicoId()))
+				.isInstanceOf(NaoEncontradoException.class)
+				.hasMessage("Serviço não encontrado no orçamento");
+	}
+
+	@Test
+	void naoRemoveItemDepoisQueOOrcamentoFoiEnviado() {
+		var os = osAguardandoAprovacao();
+
+		assertThatThrownBy(() -> os.removerServico(trocaDeOleo.servicoId()))
+				.isInstanceOf(RegraDeNegocioException.class)
+				.hasMessage("Só é possível remover serviços numa OS em diagnóstico");
+		assertThat(os.orcamentoAtual().getItensServico()).containsExactly(trocaDeOleo);
+	}
+
+	@Test
 	void naoIncluiItemDepoisQueOOrcamentoFoiEnviado() {
-		OrdemServico os = osAguardandoAprovacao();
+		var os = osAguardandoAprovacao();
 
 		assertThatThrownBy(() -> os.incluirPeca(filtro)).isInstanceOf(RegraDeNegocioException.class);
 		assertThatThrownBy(() -> os.incluirServico(trocaDeOleo)).isInstanceOf(RegraDeNegocioException.class);
@@ -99,7 +174,7 @@ class OrdemServicoTest {
 
 	@Test
 	void aprovacaoRegistraARespostaEIniciaAExecucao() {
-		OrdemServico os = osAguardandoAprovacao();
+		var os = osAguardandoAprovacao();
 
 		os.aprovarOrcamento(AGORA);
 
@@ -110,7 +185,7 @@ class OrdemServicoTest {
 
 	@Test
 	void rejeicaoRegistraARespostaELevaAOSParaRejeitada() {
-		OrdemServico os = osAguardandoAprovacao();
+		var os = osAguardandoAprovacao();
 
 		os.rejeitarOrcamento(AGORA);
 
@@ -121,7 +196,7 @@ class OrdemServicoTest {
 
 	@Test
 	void revisaoCriaNovoOrcamentoComAsLinhasDoAnteriorEPreservaOHistorico() {
-		OrdemServico os = osEmDiagnostico();
+		var os = osEmDiagnostico();
 		os.incluirServico(trocaDeOleo);
 		os.incluirPeca(filtro);
 		os.concluirDiagnostico(AGORA);
@@ -133,12 +208,12 @@ class OrdemServicoTest {
 		assertThat(os.getStatus()).isEqualTo(StatusOS.EM_DIAGNOSTICO);
 		assertThat(os.getOrcamentos()).hasSize(2);
 
-		Orcamento rejeitado = os.getOrcamentos().getFirst();
+		var rejeitado = os.getOrcamentos().getFirst();
 		assertThat(rejeitado.getSituacao()).isEqualTo(SituacaoOrcamento.REJEITADO);
 		assertThat(rejeitado.getItensPeca()).containsExactly(filtro);
 		assertThat(rejeitado.total()).isEqualTo(Dinheiro.de("125.00"));
 
-		Orcamento revisado = os.orcamentoAtual();
+		var revisado = os.orcamentoAtual();
 		assertThat(revisado.getNumero()).isEqualTo(2);
 		assertThat(revisado.getSituacao()).isEqualTo(SituacaoOrcamento.EM_ELABORACAO);
 		assertThat(revisado.getItensServico()).containsExactly(trocaDeOleo);
@@ -155,7 +230,7 @@ class OrdemServicoTest {
 
 	@Test
 	void veiculoDeOSRejeitadaPodeSerEntregueSemExecucao() {
-		OrdemServico os = osAguardandoAprovacao();
+		var os = osAguardandoAprovacao();
 		os.rejeitarOrcamento(AGORA);
 
 		os.entregarVeiculo(AGORA);
@@ -166,7 +241,7 @@ class OrdemServicoTest {
 
 	@Test
 	void transicoesForaDeOrdemSaoRecusadasEMantemOStatus() {
-		OrdemServico recebida = novaOS();
+		var recebida = novaOS();
 		assertThatThrownBy(() -> recebida.concluirDiagnostico(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
 		assertThatThrownBy(() -> recebida.aprovarOrcamento(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
 		assertThatThrownBy(() -> recebida.rejeitarOrcamento(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
@@ -174,7 +249,7 @@ class OrdemServicoTest {
 		assertThatThrownBy(() -> recebida.entregarVeiculo(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
 		assertThat(recebida.getStatus()).isEqualTo(StatusOS.RECEBIDA);
 
-		OrdemServico aguardando = osAguardandoAprovacao();
+		var aguardando = osAguardandoAprovacao();
 		assertThatThrownBy(aguardando::iniciarDiagnostico).isInstanceOf(TransicaoInvalidaException.class);
 		assertThatThrownBy(() -> aguardando.concluirServico(AGORA)).isInstanceOf(TransicaoInvalidaException.class);
 		assertThat(aguardando.getStatus()).isEqualTo(StatusOS.AGUARDANDO_APROVACAO);
@@ -182,7 +257,7 @@ class OrdemServicoTest {
 
 	@Test
 	void osEntregueNaoAceitaMaisNenhumComando() {
-		OrdemServico os = osAguardandoAprovacao();
+		var os = osAguardandoAprovacao();
 		os.aprovarOrcamento(AGORA);
 		os.concluirServico(AGORA);
 		os.entregarVeiculo(AGORA);
@@ -194,7 +269,7 @@ class OrdemServicoTest {
 
 	@Test
 	void tempoDeExecucaoContaDaAprovacaoAteAConclusaoDoServico() {
-		OrdemServico os = osAguardandoAprovacao();
+		var os = osAguardandoAprovacao();
 		assertThat(os.tempoDeExecucao()).isEmpty();
 
 		os.aprovarOrcamento(AGORA);
@@ -209,13 +284,13 @@ class OrdemServicoTest {
 	}
 
 	private OrdemServico osEmDiagnostico() {
-		OrdemServico os = novaOS();
+		var os = novaOS();
 		os.iniciarDiagnostico();
 		return os;
 	}
 
 	private OrdemServico osAguardandoAprovacao() {
-		OrdemServico os = osEmDiagnostico();
+		var os = osEmDiagnostico();
 		os.incluirServico(trocaDeOleo);
 		os.concluirDiagnostico(AGORA);
 		return os;

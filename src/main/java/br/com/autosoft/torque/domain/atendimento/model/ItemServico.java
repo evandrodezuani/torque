@@ -8,7 +8,8 @@ import br.com.autosoft.torque.domain.shared.RegraDeNegocioException;
 /**
  * Linha de serviço do orçamento. Descrição e preço são copiados do cadastro no momento da inclusão.
  */
-public record ItemServico(UUID servicoId, String descricao, Dinheiro precoUnitario, int quantidade) {
+public record ItemServico(UUID servicoId, String descricao, Dinheiro precoUnitario, int quantidade)
+		implements ItemOrcamento<ItemServico> {
 
 	public ItemServico {
 		if (servicoId == null || descricao == null || descricao.isBlank() || precoUnitario == null) {
@@ -19,6 +20,17 @@ public record ItemServico(UUID servicoId, String descricao, Dinheiro precoUnitar
 		}
 	}
 
+	@Override
+	public UUID referencia() {
+		return servicoId;
+	}
+
+	@Override
+	public ItemServico somar(int quantidade) {
+		return new ItemServico(servicoId, descricao, precoUnitario, this.quantidade + quantidade);
+	}
+
+	@Override
 	public Dinheiro subtotal() {
 		return precoUnitario.multiplicar(quantidade);
 	}

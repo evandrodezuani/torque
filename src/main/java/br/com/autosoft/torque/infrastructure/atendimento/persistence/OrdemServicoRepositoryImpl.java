@@ -1,12 +1,19 @@
 package br.com.autosoft.torque.infrastructure.atendimento.persistence;
 
+import br.com.autosoft.torque.domain.atendimento.model.ItemPeca;
+import br.com.autosoft.torque.domain.atendimento.model.ItemServico;
+import br.com.autosoft.torque.domain.atendimento.model.Orcamento;
 import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
 import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
+import br.com.autosoft.torque.domain.shared.Dinheiro;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import br.com.autosoft.torque.domain.atendimento.model.OrdemServico;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -18,6 +25,18 @@ class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 	@Override
 	public void salvar(OrdemServico ordemServico) {
 		jpaRepository.save(paraEntity(ordemServico));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<OrdemServico> buscarPorId(UUID id) {
+		return jpaRepository.findById(id).map(this::paraDominio);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<OrdemServico> listar() {
+		return jpaRepository.findAll().stream().map(this::paraDominio).toList();
 	}
 
 	@Override
@@ -52,14 +71,51 @@ class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 		entity.setEntregueEm(os.getEntregueEm());
 		for (var orcamento : os.getOrcamentos()) {
 			var orcamentoEntity = new OrcamentoEntity();
+			orcamentoEntity.setId(orcamento.getId());
 			orcamentoEntity.setOrdemServico(entity);
 			orcamentoEntity.setNumero(orcamento.getNumero());
 			orcamentoEntity.setSituacao(orcamento.getSituacao());
 			orcamentoEntity.setEnviadoEm(orcamento.getEnviadoEm());
 			orcamentoEntity.setRespondidoEm(orcamento.getRespondidoEm());
+			for (var item : orcamento.getItensServico()) {
+				var itemEntity = new ItemServicoEmbeddable();
+				itemEntity.setServicoId(item.servicoId());
+				itemEntity.setDescricao(item.descricao());
+				itemEntity.setPrecoUnitario(item.precoUnitario().valor());
+				itemEntity.setQuantidade(item.quantidade());
+				orcamentoEntity.getItensServico().add(itemEntity);
+			}
+			for (var item : orcamento.getItensPeca()) {
+				var itemEntity = new ItemPecaEmbeddable();
+				itemEntity.setItemEstoqueId(item.itemEstoqueId());
+				itemEntity.setDescricao(item.descricao());
+				itemEntity.setPrecoUnitario(item.precoUnitario().valor());
+				itemEntity.setQuantidade(item.quantidade());
+				orcamentoEntity.getItensPeca().add(itemEntity);
+			}
 			entity.getOrcamentos().add(orcamentoEntity);
 		}
 		return entity;
+	}
+
+	private OrdemServico paraDominio(OrdemServicoEntity entity) {
+		var orcamentos = entity.getOrcamentos().stream().map(this::paraDominio).toList();
+		return new OrdemServico(entity.getId(), entity.getClienteId(), entity.getVeiculoId(), entity.getAbertaEm(),
+				entity.getStatus(), entity.getExecucaoIniciadaEm(), entity.getExecucaoConcluidaEm(),
+				entity.getEntregueEm(), orcamentos);
+	}
+
+	private Orcamento paraDominio(OrcamentoEntity entity) {
+		var itensServico = entity.getItensServico().stream()
+				.map(item -> new ItemServico(item.getServicoId(), item.getDescricao(),
+						new Dinheiro(item.getPrecoUnitario()), item.getQuantidade()))
+				.toList();
+		var itensPeca = entity.getItensPeca().stream()
+				.map(item -> new ItemPeca(item.getItemEstoqueId(), item.getDescricao(),
+						new Dinheiro(item.getPrecoUnitario()), item.getQuantidade()))
+				.toList();
+		return new Orcamento(entity.getId(), entity.getNumero(), entity.getSituacao(), entity.getEnviadoEm(),
+				entity.getRespondidoEm(), itensServico, itensPeca);
 	}
 
 }

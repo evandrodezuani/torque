@@ -18,10 +18,10 @@
 ### Atualização de banco de dados
 * N/A
 
-## [0.4.0] - 2026-10-29
+## [0.5.0] - 2026-10-29
 
 ### Nova Funcionalidade
-* [feature/estoque-1](https://github.com/evandrodezuani/torque/issues/15) - CRUD de estoque
+* [feature/atendimento-7](https://github.com/evandrodezuani/torque/issues/17) - CRUD orçamento, iniciar o diagnóstico, incluir e remover serviços e peças e concluir o diagnóstico
 
 ### Melhoria
 * N/A
@@ -33,7 +33,24 @@
 * N/A
 
 ### Atualização de banco de dados
+* V8 - tabelas `orcamento_item_servico` e `orcamento_item_peca`
+
+## [0.4.0] - 2026-10-29
+
+### Nova Funcionalidade
+* [feature/estoque-1](https://github.com/evandrodezuani/torque/issues/16) - CRUD de estoque
+
+### Melhoria
 * N/A
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* V7 - tabela `item_estoque`
 
 ## [0.3.0] - 2026-10-29
 
@@ -50,7 +67,8 @@
 * N/A
 
 ### Atualização de banco de dados
-* N/A
+* V5 - tabelas `tipo_servico` e `servico`
+* V6 - coluna `tipo` em `veiculo`
 
 ## [0.2.0] - 2026-10-27
 

@@ -9,7 +9,8 @@ import br.com.autosoft.torque.domain.shared.RegraDeNegocioException;
  * Linha de peça ou insumo do orçamento. Referencia o item de estoque por identidade;
  * descrição e preço são copiados no momento da inclusão.
  */
-public record ItemPeca(UUID itemEstoqueId, String descricao, Dinheiro precoUnitario, int quantidade) {
+public record ItemPeca(UUID itemEstoqueId, String descricao, Dinheiro precoUnitario, int quantidade)
+		implements ItemOrcamento<ItemPeca> {
 
 	public ItemPeca {
 		if (itemEstoqueId == null || descricao == null || descricao.isBlank() || precoUnitario == null) {
@@ -20,6 +21,17 @@ public record ItemPeca(UUID itemEstoqueId, String descricao, Dinheiro precoUnita
 		}
 	}
 
+	@Override
+	public UUID referencia() {
+		return itemEstoqueId;
+	}
+
+	@Override
+	public ItemPeca somar(int quantidade) {
+		return new ItemPeca(itemEstoqueId, descricao, precoUnitario, this.quantidade + quantidade);
+	}
+
+	@Override
 	public Dinheiro subtotal() {
 		return precoUnitario.multiplicar(quantidade);
 	}
