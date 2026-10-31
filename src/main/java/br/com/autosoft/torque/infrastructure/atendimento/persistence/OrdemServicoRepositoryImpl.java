@@ -36,6 +36,12 @@ class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 
 	@Override
 	@Transactional(readOnly = true)
+	public Optional<OrdemServico> buscarPorCodigoAcompanhamento(UUID codigoAcompanhamento) {
+		return jpaRepository.findByCodigoAcompanhamento(codigoAcompanhamento).map(this::paraDominio);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
 	public List<OrdemServico> listar(StatusOS status, boolean maisAntigasPrimeiro) {
 		var ordem = Sort.by(maisAntigasPrimeiro ? Sort.Direction.ASC : Sort.Direction.DESC, "abertaEm");
 		var entities = status == null ? jpaRepository.findAll(ordem) : jpaRepository.findByStatus(status, ordem);
@@ -75,6 +81,7 @@ class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 	private OrdemServicoEntity paraEntity(OrdemServico os) {
 		var entity = new OrdemServicoEntity();
 		entity.setId(os.getId());
+		entity.setCodigoAcompanhamento(os.getCodigoAcompanhamento());
 		entity.setClienteId(os.getClienteId());
 		entity.setVeiculoId(os.getVeiculoId());
 		entity.setStatus(os.getStatus());
@@ -113,9 +120,9 @@ class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 
 	private OrdemServico paraDominio(OrdemServicoEntity entity) {
 		var orcamentos = entity.getOrcamentos().stream().map(this::paraDominio).toList();
-		return new OrdemServico(entity.getId(), entity.getClienteId(), entity.getVeiculoId(), entity.getAbertaEm(),
-				entity.getStatus(), entity.getExecucaoIniciadaEm(), entity.getExecucaoConcluidaEm(),
-				entity.getEntregueEm(), orcamentos);
+		return new OrdemServico(entity.getId(), entity.getCodigoAcompanhamento(), entity.getClienteId(),
+				entity.getVeiculoId(), entity.getAbertaEm(), entity.getStatus(), entity.getExecucaoIniciadaEm(),
+				entity.getExecucaoConcluidaEm(), entity.getEntregueEm(), orcamentos);
 	}
 
 	private Orcamento paraDominio(OrcamentoEntity entity) {

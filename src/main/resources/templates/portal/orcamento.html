@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Orçamento</title>
+    <link rel="stylesheet" th:href="@{/css/portal.css}">
+</head>
+<body th:with="os=${acompanhamento.ordemServico()}, veiculo=${acompanhamento.veiculo()}, orcamento=${os.orcamentoAtual()}">
+<main>
+    <h1 th:text="${'Orçamento nº ' + orcamento.numero}">Orçamento nº 1</h1>
+    <p>
+        <span th:text="${veiculo.marca + ' ' + veiculo.modelo}">Honda CG 160</span>,
+        placa <span th:text="${veiculo.placa.numero()}">BRA2E19</span>
+    </p>
+
+    <span class="situacao" th:switch="${orcamento.situacao.name()}">
+        <span th:case="'PENDENTE'">Aguardando a sua resposta</span>
+        <span th:case="'APROVADO'">Aprovado</span>
+        <span th:case="'REJEITADO'">Rejeitado</span>
+        <span th:case="*">Em elaboração</span>
+    </span>
+
+    <table>
+        <tr>
+            <th>Item</th>
+            <th class="numero">Qtd.</th>
+            <th class="numero">Subtotal</th>
+        </tr>
+        <tr th:each="item : ${orcamento.itensServico}">
+            <td th:text="${item.descricao()}">Troca de óleo</td>
+            <td class="numero" th:text="${item.quantidade()}">1</td>
+            <td class="numero"
+                th:text="${'R$ ' + #numbers.formatDecimal(item.subtotal().valor(), 1, 'POINT', 2, 'COMMA')}">R$ 50,00</td>
+        </tr>
+        <tr th:each="item : ${orcamento.itensPeca}">
+            <td th:text="${item.descricao()}">Óleo 10W30 1 L</td>
+            <td class="numero" th:text="${item.quantidade()}">2</td>
+            <td class="numero"
+                th:text="${'R$ ' + #numbers.formatDecimal(item.subtotal().valor(), 1, 'POINT', 2, 'COMMA')}">R$ 76,00</td>
+        </tr>
+        <tr>
+            <td colspan="2" class="numero"><strong>Total</strong></td>
+            <td class="numero">
+                <strong th:text="${'R$ ' + #numbers.formatDecimal(orcamento.total().valor(), 1, 'POINT', 2, 'COMMA')}">R$ 126,00</strong>
+            </td>
+        </tr>
+    </table>
+
+    <div class="acoes" th:if="${orcamento.situacao.name() == 'PENDENTE'}">
+        <form method="post" th:action="@{/portal/{codigo}/aprovar(codigo=${os.codigoAcompanhamento})}">
+            <button type="submit" class="aprovar">Aprovar</button>
+        </form>
+        <form method="post" th:action="@{/portal/{codigo}/rejeitar(codigo=${os.codigoAcompanhamento})}">
+            <button type="submit" class="rejeitar">Rejeitar</button>
+        </form>
+    </div>
+</main>
+</body>
+</html>

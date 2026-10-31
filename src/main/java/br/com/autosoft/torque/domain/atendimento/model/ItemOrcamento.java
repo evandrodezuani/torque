@@ -11,6 +11,8 @@ public interface ItemOrcamento<T extends ItemOrcamento<T>> {
 
 	UUID referencia();
 
+	String descricao();
+
 	int quantidade();
 
 	Dinheiro precoUnitario();

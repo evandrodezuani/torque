@@ -13,6 +13,8 @@ public interface OrdemServicoRepository {
 
     Optional<OrdemServico> buscarPorId(UUID id);
 
+    Optional<OrdemServico> buscarPorCodigoAcompanhamento(UUID codigoAcompanhamento);
+
     /**
      * Ordena pela data de abertura. Com o status nulo, lista as ordens de serviço de todos os status.
      */

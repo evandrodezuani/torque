@@ -4,7 +4,7 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
-* N/A
+* [feature/atendimento-10](https://github.com/evandrodezuani/torque/issues/20) - Acompanhamento da OS pelo cliente sem login com email de email
 
 ### Melhoria
 * N/A

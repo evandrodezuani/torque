@@ -1,6 +1,7 @@
 package br.com.autosoft.torque.infrastructure.atendimento.persistence;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
@@ -10,6 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 interface OrdemServicoJpaRepository extends JpaRepository<OrdemServicoEntity, UUID> {
 
     List<OrdemServicoEntity> findByStatus(StatusOS status, Sort sort);
+
+    Optional<OrdemServicoEntity> findByCodigoAcompanhamento(UUID codigoAcompanhamento);
 
     boolean existsByClienteIdAndStatusNot(UUID clienteId, StatusOS status);
 

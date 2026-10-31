@@ -33,6 +33,14 @@ class OrdemServicoTest {
 	}
 
 	@Test
+	void abrirGeraUmCodigoDeAcompanhamentoDiferenteDoId() {
+		var os = novaOS();
+
+		assertThat(os.getCodigoAcompanhamento()).isNotNull().isNotEqualTo(os.getId());
+		assertThat(novaOS().getCodigoAcompanhamento()).isNotEqualTo(os.getCodigoAcompanhamento());
+	}
+
+	@Test
 	void naoAbreOSSemClienteOuVeiculo() {
 		assertThatThrownBy(() -> OrdemServico.abrir(null, UUID.randomUUID(), AGORA))
 				.isInstanceOf(RegraDeNegocioException.class);

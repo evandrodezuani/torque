@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titulo}">Orçamento aprovado</title>
+    <link rel="stylesheet" th:href="@{/css/portal.css}">
+</head>
+<body th:with="os=${acompanhamento.ordemServico()}, veiculo=${acompanhamento.veiculo()}">
+<main>
+    <h1 th:text="${titulo}">Orçamento aprovado</h1>
+    <p th:text="${texto}">Obrigado! A oficina já pode começar o serviço do seu veículo.</p>
+    <p>
+        <span th:text="${veiculo.marca + ' ' + veiculo.modelo}">Honda CG 160</span>,
+        placa <span th:text="${veiculo.placa.numero()}">BRA2E19</span>.
+        Total do orçamento:
+        <strong th:text="${'R$ ' + #numbers.formatDecimal(os.orcamentoAtual().total().valor(), 1, 'POINT', 2, 'COMMA')}">R$ 126,00</strong>
+    </p>
+    <p><a th:href="@{/portal/{codigo}(codigo=${os.codigoAcompanhamento})}">Ver o orçamento</a></p>
+</main>
+</body>
+</html>
