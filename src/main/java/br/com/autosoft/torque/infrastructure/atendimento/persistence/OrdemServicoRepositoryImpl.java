@@ -4,8 +4,11 @@ import br.com.autosoft.torque.domain.atendimento.model.ItemPeca;
 import br.com.autosoft.torque.domain.atendimento.model.ItemServico;
 import br.com.autosoft.torque.domain.atendimento.model.Orcamento;
 import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
+import br.com.autosoft.torque.domain.atendimento.model.TempoMedioDeExecucao;
+import br.com.autosoft.torque.domain.cadastro.model.TipoVeiculo;
 import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
 import br.com.autosoft.torque.domain.shared.Dinheiro;
+import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.autosoft.torque.domain.atendimento.model.OrdemServico;
 import lombok.RequiredArgsConstructor;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,6 +27,7 @@ import java.util.UUID;
 class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 
 	private final OrdemServicoJpaRepository jpaRepository;
+	private final EntityManager entityManager;
 
 	@Override
 	public void salvar(OrdemServico ordemServico) {
@@ -46,6 +52,51 @@ class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 		var ordem = Sort.by(maisAntigasPrimeiro ? Sort.Direction.ASC : Sort.Direction.DESC, "abertaEm");
 		var entities = status == null ? jpaRepository.findAll(ordem) : jpaRepository.findByStatus(status, ordem);
 		return entities.stream().map(this::paraDominio).toList();
+	}
+
+	@Override
+	public TempoMedioDeExecucao tempoMedioDeExecucao(TipoVeiculo tipoVeiculo, Instant concluidasDesde,
+                                                     Instant concluidasAntesDe) {
+		var jpql = new StringBuilder("select new br.com.autosoft.torque.infrastructure.atendimento.persistence.TempoMedioLinha" +
+				"(count(o), avg((o.execucaoConcluidaEm - o.execucaoIniciadaEm) by second)) " +
+				"from OrdemServicoEntity o ");
+
+		if (tipoVeiculo != null) {
+			jpql.append("join VeiculoEntity v on v.id = o.veiculoId ");
+		}
+
+		jpql.append("where o.execucaoConcluidaEm is not null ");
+
+		if (tipoVeiculo != null) {
+			jpql.append("and v.tipo = :tipoVeiculo ");
+		}
+
+		if (concluidasDesde != null) {
+			jpql.append("and o.execucaoConcluidaEm >= :desde ");
+		}
+
+		if (concluidasAntesDe != null) {
+			jpql.append("and o.execucaoConcluidaEm < :antesDe ");
+		}
+
+		var consulta = entityManager.createQuery(jpql.toString(), TempoMedioLinha.class);
+
+		if (tipoVeiculo != null) {
+			consulta.setParameter("tipoVeiculo", tipoVeiculo);
+		}
+
+		if (concluidasDesde != null) {
+			consulta.setParameter("desde", concluidasDesde);
+		}
+
+		if (concluidasAntesDe != null) {
+			consulta.setParameter("antesDe", concluidasAntesDe);
+		}
+
+		var linha = consulta.getSingleResult();
+
+		var tempoMedio = linha.segundos() == null ? null : Duration.ofSeconds(Math.round(linha.segundos()));
+		return new TempoMedioDeExecucao(linha.quantidade(), tempoMedio);
 	}
 
 	@Override

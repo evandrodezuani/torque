@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,6 +21,7 @@ import br.com.autosoft.torque.domain.atendimento.model.ItemPeca;
 import br.com.autosoft.torque.domain.atendimento.model.ItemServico;
 import br.com.autosoft.torque.domain.atendimento.model.OrdemServico;
 import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
+import br.com.autosoft.torque.domain.atendimento.model.TempoMedioDeExecucao;
 import br.com.autosoft.torque.domain.atendimento.model.TransicaoInvalidaException;
 import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
 import br.com.autosoft.torque.domain.cadastro.model.Cliente;
@@ -329,6 +331,34 @@ class OrdemServicoServiceTest {
 		assertThatThrownBy(() -> ordemServicoService.rejeitarOrcamentoPeloCliente(codigo))
 				.isInstanceOf(NaoEncontradoException.class)
 				.hasMessage("Ordem de serviço não encontrada");
+	}
+
+	@Test
+	void oPeriodoDoTempoMedioUsaOsDiasNoHorarioDeBrasiliaComAsDuasDatasIncluidas() {
+		when(repository.tempoMedioDeExecucao(any(), any(), any())).thenReturn(new TempoMedioDeExecucao(0, null));
+
+		ordemServicoService.tempoMedioDeExecucao(TipoVeiculo.CAMINHAO, LocalDate.of(2026, 10, 1),
+				LocalDate.of(2026, 10, 31));
+
+		verify(repository).tempoMedioDeExecucao(TipoVeiculo.CAMINHAO, Instant.parse("2026-10-01T03:00:00Z"),
+				Instant.parse("2026-11-01T03:00:00Z"));
+	}
+
+	@Test
+	void semFiltroConsideraTodasAsOsConcluidas() {
+		when(repository.tempoMedioDeExecucao(null, null, null)).thenReturn(new TempoMedioDeExecucao(0, null));
+
+		ordemServicoService.tempoMedioDeExecucao(null, null, null);
+
+		verify(repository).tempoMedioDeExecucao(null, null, null);
+	}
+
+	@Test
+	void recusaPeriodoComADataInicialDepoisDaFinal() {
+		assertThatThrownBy(() -> ordemServicoService.tempoMedioDeExecucao(null, LocalDate.of(2026, 10, 31),
+				LocalDate.of(2026, 10, 1)))
+				.isInstanceOf(RegraDeNegocioException.class)
+				.hasMessage("A data inicial não pode ser depois da data final");
 	}
 
 	private ItemEstoque oleoComSaldo(int saldo) {

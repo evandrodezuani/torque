@@ -426,6 +426,55 @@ class OrdemServicoControllerTest {
                 .andExpect(jsonPath("$.detail").value("O item já foi usado em orçamentos e não pode ser removido"));
     }
 
+    @Test
+    void tempoMedioSemOsConcluidaDevolveZeroENulos() throws Exception {
+        abrirComOrcamentoEnviado();
+
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ordensConsideradas").value(0))
+                .andExpect(jsonPath("$.tempoMedioEmMinutos").isEmpty())
+                .andExpect(jsonPath("$.tempoMedioEmDias").isEmpty())
+                .andExpect(jsonPath("$.tempoMedio").isEmpty());
+    }
+
+    @Test
+    void tempoMedioConsideraAOsComOServicoConcluido() throws Exception {
+        var id = abrirComOrcamentoEnviado();
+        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-servico")).andExpect(status().isOk());
+
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ordensConsideradas").value(1))
+                .andExpect(jsonPath("$.tempoMedioEmMinutos").value(0))
+                .andExpect(jsonPath("$.tempoMedioEmDias").value(0))
+                .andExpect(jsonPath("$.tempoMedio").value("0min"));
+    }
+
+    @Test
+    void tempoMedioFiltraPeloTipoDoVeiculo() throws Exception {
+        var id = abrirComOrcamentoEnviado();
+        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-servico")).andExpect(status().isOk());
+
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").param("tipoVeiculo", "MOTO"))
+                .andExpect(jsonPath("$.ordensConsideradas").value(1));
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").param("tipoVeiculo", "CARRO"))
+                .andExpect(jsonPath("$.ordensConsideradas").value(0));
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").param("tipoVeiculo", "BICICLETA"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void tempoMedioRecusaPeriodoInvertidoEDataInvalida() throws Exception {
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").param("de", "2026-10-31").param("ate", "2026-10-01"))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.detail").value("A data inicial não pode ser depois da data final"));
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").param("de", "31/10/2026"))
+                .andExpect(status().isBadRequest());
+    }
+
     private String abrirComOrcamentoEnviado() throws Exception {
         var id = abrirEmDiagnostico();
         incluirServico(id, TROCA_DE_OLEO_MOTO, 1);

@@ -2,6 +2,7 @@ package br.com.autosoft.torque.infrastructure.atendimento.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -20,12 +21,14 @@ import br.com.autosoft.torque.domain.atendimento.model.OrdemServico;
 import br.com.autosoft.torque.domain.atendimento.model.SituacaoOrcamento;
 import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
 import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
+import br.com.autosoft.torque.domain.cadastro.model.TipoVeiculo;
 
 @SpringBootTest
 @Transactional
 @Sql(statements = {
         "insert into cliente (id, documento, nome, email) values ('3f2a1c4e-8b7d-4e6f-9a1b-2c3d4e5f6a7b', '52998224725', 'Maria Souza', 'maria@email.com')",
         "insert into veiculo (id, cliente_id, placa, tipo, marca, modelo, ano) values ('7b6a5f4e-3d2c-4b1a-9f8e-7d6c5b4a3f2e', '3f2a1c4e-8b7d-4e6f-9a1b-2c3d4e5f6a7b', 'BRA2E19', 'MOTO', 'Honda', 'CG 160', 2022)",
+        "insert into veiculo (id, cliente_id, placa, tipo, marca, modelo, ano) values ('1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', '3f2a1c4e-8b7d-4e6f-9a1b-2c3d4e5f6a7b', 'ABC1234', 'CARRO', 'Fiat', 'Uno', 2015)",
         "insert into tipo_servico (id, descricao) values ('5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d', 'Troca de óleo')",
         "insert into servico (id, tipo_servico_id, tipo_veiculo, preco, ativo) values ('6b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e', '5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d', 'MOTO', 50.00, true)",
         "insert into item_estoque (id, tipo, descricao, preco, saldo, reservado) values ('8c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f', 'INSUMO', 'Óleo 10W30 1 L', 38.00, 10, 0)"
@@ -34,6 +37,7 @@ class OrdemServicoRepositoryImplTest {
 
     private static final UUID CLIENTE_ID = UUID.fromString("3f2a1c4e-8b7d-4e6f-9a1b-2c3d4e5f6a7b");
     private static final UUID VEICULO_ID = UUID.fromString("7b6a5f4e-3d2c-4b1a-9f8e-7d6c5b4a3f2e");
+    private static final UUID CARRO_ID = UUID.fromString("1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d");
     private static final UUID SERVICO_ID = UUID.fromString("6b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e");
     private static final UUID ITEM_ESTOQUE_ID = UUID.fromString("8c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f");
 
@@ -103,6 +107,66 @@ class OrdemServicoRepositoryImplTest {
         assertThat(revisada.getOrcamentos().getFirst().getSituacao()).isEqualTo(SituacaoOrcamento.REJEITADO);
         assertThat(revisada.orcamentoAtual().getNumero()).isEqualTo(2);
         assertThat(revisada.orcamentoAtual().getItensServico()).containsExactly(TROCA_DE_OLEO);
+    }
+
+    @Test
+    void calculaOTempoMedioSoDasOsConcluidas() {
+        repository.salvar(osExecutada("2026-10-12T10:00:00Z", "2026-10-12T13:00:00Z"));
+        repository.salvar(osExecutada("2026-10-13T08:00:00Z", "2026-10-13T09:00:00Z"));
+        var emExecucao = osAprovada("2026-10-14T08:00:00Z");
+        repository.salvar(emExecucao);
+        repository.salvar(OrdemServico.abrir(CLIENTE_ID, VEICULO_ID, Instant.parse("2026-10-14T09:00:00Z")));
+        recarregarDoBanco();
+
+        var tempoMedio = repository.tempoMedioDeExecucao(null, null, null);
+
+        assertThat(tempoMedio.ordensConsideradas()).isEqualTo(2);
+        assertThat(tempoMedio.tempoMedio()).isEqualTo(Duration.ofHours(2));
+    }
+
+    @Test
+    void filtraPelaDataDeConclusao() {
+        repository.salvar(osExecutada("2026-09-30T10:00:00Z", "2026-09-30T14:00:00Z"));
+        repository.salvar(osExecutada("2026-10-12T10:00:00Z", "2026-10-12T11:00:00Z"));
+        repository.salvar(osExecutada("2026-11-01T10:00:00Z", "2026-11-01T18:00:00Z"));
+        recarregarDoBanco();
+
+        var outubro = repository.tempoMedioDeExecucao(null,
+                Instant.parse("2026-10-01T00:00:00Z"), Instant.parse("2026-11-01T00:00:00Z"));
+
+        assertThat(outubro.ordensConsideradas()).isEqualTo(1);
+        assertThat(outubro.tempoMedio()).isEqualTo(Duration.ofHours(1));
+    }
+
+    @Test
+    void filtraPeloTipoDoVeiculo() {
+        repository.salvar(osExecutada(VEICULO_ID, "2026-10-12T10:00:00Z", "2026-10-12T12:00:00Z"));
+        repository.salvar(osExecutada(CARRO_ID, "2026-10-12T10:00:00Z", "2026-10-12T18:00:00Z"));
+        repository.salvar(osExecutada(CARRO_ID, "2026-10-13T10:00:00Z", "2026-10-13T14:00:00Z"));
+        recarregarDoBanco();
+
+        var motos = repository.tempoMedioDeExecucao(TipoVeiculo.MOTO, null, null);
+        var carros = repository.tempoMedioDeExecucao(TipoVeiculo.CARRO, null, null);
+        var caminhoes = repository.tempoMedioDeExecucao(TipoVeiculo.CAMINHAO, null, null);
+        var todos = repository.tempoMedioDeExecucao(null, null, null);
+
+        assertThat(motos.ordensConsideradas()).isEqualTo(1);
+        assertThat(motos.tempoMedio()).isEqualTo(Duration.ofHours(2));
+        assertThat(carros.ordensConsideradas()).isEqualTo(2);
+        assertThat(carros.tempoMedio()).isEqualTo(Duration.ofHours(6));
+        assertThat(caminhoes.ordensConsideradas()).isZero();
+        assertThat(todos.ordensConsideradas()).isEqualTo(3);
+    }
+
+    @Test
+    void semOsConcluidaAMediaENula() {
+        repository.salvar(OrdemServico.abrir(CLIENTE_ID, VEICULO_ID, Instant.parse("2026-10-12T10:00:00Z")));
+        recarregarDoBanco();
+
+        var tempoMedio = repository.tempoMedioDeExecucao(null, null, null);
+
+        assertThat(tempoMedio.ordensConsideradas()).isZero();
+        assertThat(tempoMedio.tempoMedio()).isNull();
     }
 
     @Test
@@ -187,6 +251,29 @@ class OrdemServicoRepositoryImplTest {
         repository.salvar(os);
 
         assertThat(repository.existeEmAndamentoPorCliente(CLIENTE_ID)).isFalse();
+    }
+
+    private OrdemServico osAprovada(String aprovadaEm) {
+        return osAprovada(VEICULO_ID, aprovadaEm);
+    }
+
+    private OrdemServico osAprovada(UUID veiculoId, String aprovadaEm) {
+        var os = OrdemServico.abrir(CLIENTE_ID, veiculoId, Instant.parse(aprovadaEm).minusSeconds(3600));
+        os.iniciarDiagnostico();
+        os.incluirServico(TROCA_DE_OLEO);
+        os.concluirDiagnostico(Instant.parse(aprovadaEm).minusSeconds(1800), Map.of());
+        os.aprovarOrcamento(Instant.parse(aprovadaEm));
+        return os;
+    }
+
+    private OrdemServico osExecutada(String aprovadaEm, String concluidaEm) {
+        return osExecutada(VEICULO_ID, aprovadaEm, concluidaEm);
+    }
+
+    private OrdemServico osExecutada(UUID veiculoId, String aprovadaEm, String concluidaEm) {
+        var os = osAprovada(veiculoId, aprovadaEm);
+        os.concluirServico(Instant.parse(concluidaEm));
+        return os;
     }
 
     private void recarregarDoBanco() {

@@ -1,6 +1,8 @@
 package br.com.autosoft.torque.application.atendimento;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -14,7 +16,9 @@ import br.com.autosoft.torque.domain.atendimento.model.ItemPeca;
 import br.com.autosoft.torque.domain.atendimento.model.ItemServico;
 import br.com.autosoft.torque.domain.atendimento.model.OrdemServico;
 import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
+import br.com.autosoft.torque.domain.atendimento.model.TempoMedioDeExecucao;
 import br.com.autosoft.torque.domain.atendimento.repository.OrdemServicoRepository;
+import br.com.autosoft.torque.domain.cadastro.model.TipoVeiculo;
 import br.com.autosoft.torque.domain.cadastro.repository.ClienteRepository;
 import br.com.autosoft.torque.domain.cadastro.repository.ServicoRepository;
 import br.com.autosoft.torque.domain.cadastro.repository.TipoServicoRepository;
@@ -29,6 +33,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class OrdemServicoService {
+
+	private static final ZoneId FUSO_HORARIO = ZoneId.of("America/Sao_Paulo");
 
 	private final OrdemServicoRepository repository;
 	private final ClienteRepository clienteRepository;
@@ -61,6 +67,16 @@ public class OrdemServicoService {
 
 	public List<OrdemServico> listar(StatusOS status, boolean maisAntigasPrimeiro) {
 		return repository.listar(status, maisAntigasPrimeiro);
+	}
+
+	public TempoMedioDeExecucao tempoMedioDeExecucao(TipoVeiculo tipoVeiculo, LocalDate concluidasDe,
+			LocalDate concluidasAte) {
+		if (concluidasDe != null && concluidasAte != null && concluidasDe.isAfter(concluidasAte)) {
+			throw new RegraDeNegocioException("A data inicial não pode ser depois da data final");
+		}
+		var desde = concluidasDe == null ? null : concluidasDe.atStartOfDay(FUSO_HORARIO).toInstant();
+		var antesDe = concluidasAte == null ? null : concluidasAte.plusDays(1).atStartOfDay(FUSO_HORARIO).toInstant();
+		return repository.tempoMedioDeExecucao(tipoVeiculo, desde, antesDe);
 	}
 
 	@Transactional
