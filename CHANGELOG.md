@@ -4,6 +4,23 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
+* N/A
+
+### Melhoria
+* N/A
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
+## [0.9.0] - 2026-10-31
+
+### Nova Funcionalidade
 * [feature/atendimento-11](https://github.com/evandrodezuani/torque/issues/5) - Tempo médio de execução das OS concluídas
 
 ### Melhoria
