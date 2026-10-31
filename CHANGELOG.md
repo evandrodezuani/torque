@@ -4,6 +4,23 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
+* N/A
+
+### Melhoria
+* N/A
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
+## [0.8.0] - 2026-10-31
+
+### Nova Funcionalidade
 * [feature/atendimento-10](https://github.com/evandrodezuani/torque/issues/20) - Acompanhamento da OS pelo cliente sem login com email de email
 
 ### Melhoria
