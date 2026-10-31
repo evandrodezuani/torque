@@ -26,6 +26,7 @@ public class OrdemServicoEntity {
 
 	@Id
 	private UUID id;
+	private UUID codigoAcompanhamento;
 	private UUID clienteId;
 	private UUID veiculoId;
 	@Enumerated(EnumType.STRING)

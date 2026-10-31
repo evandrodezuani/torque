@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 import br.com.autosoft.torque.domain.atendimento.model.ItemPeca;
 import br.com.autosoft.torque.domain.atendimento.model.ItemServico;
@@ -47,8 +48,9 @@ class OrdemServicoServiceTest {
 	private final ServicoRepository servicoRepository = mock(ServicoRepository.class);
 	private final TipoServicoRepository tipoServicoRepository = mock(TipoServicoRepository.class);
 	private final ItemEstoqueRepository itemEstoqueRepository = mock(ItemEstoqueRepository.class);
+	private final ApplicationEventPublisher eventos = mock(ApplicationEventPublisher.class);
 	private final OrdemServicoService ordemServicoService = new OrdemServicoService(repository, clienteRepository,
-			veiculoRepository, servicoRepository, tipoServicoRepository, itemEstoqueRepository);
+			veiculoRepository, servicoRepository, tipoServicoRepository, itemEstoqueRepository, eventos);
 
 	private final Cliente maria = Cliente.cadastrar(new Documento("52998224725"), "Maria Souza", "maria@email.com", null);
 	private final Veiculo motoDaMaria = Veiculo.cadastrar(maria.getId(), new Placa("BRA2E19"), TipoVeiculo.MOTO, "Honda",
@@ -269,6 +271,64 @@ class OrdemServicoServiceTest {
 		assertThatThrownBy(() -> ordemServicoService.aprovarOrcamento(ordemServico.getId()))
 				.isInstanceOf(TransicaoInvalidaException.class);
 		verify(repository, never()).salvar(any());
+	}
+
+	@Test
+	void concluirODiagnosticoPublicaQueOOrcamentoFoiEnviado() {
+		var oleo = oleoComSaldo(10);
+		var ordemServico = osEmDiagnostico();
+		ordemServico.incluirPeca(new ItemPeca(oleo.getId(), "Óleo 10W30 1 L", Dinheiro.de("38.00"), 2));
+
+		ordemServicoService.concluirDiagnostico(ordemServico.getId());
+
+		verify(eventos).publishEvent(new OrcamentoEnviado(ordemServico.getCodigoAcompanhamento()));
+	}
+
+	@Test
+	void naoPublicaNadaQuandoFaltaEstoque() {
+		var oleo = oleoComSaldo(1);
+		var ordemServico = osEmDiagnostico();
+		ordemServico.incluirPeca(new ItemPeca(oleo.getId(), "Óleo 10W30 1 L", Dinheiro.de("38.00"), 2));
+
+		assertThatThrownBy(() -> ordemServicoService.concluirDiagnostico(ordemServico.getId()))
+				.isInstanceOf(RegraDeNegocioException.class);
+		verify(eventos, never()).publishEvent(any(OrcamentoEnviado.class));
+	}
+
+	@Test
+	void clienteAcompanhaAOsPeloCodigoEVeOVeiculo() {
+		var ordemServico = osEmDiagnostico();
+		when(repository.buscarPorCodigoAcompanhamento(ordemServico.getCodigoAcompanhamento()))
+				.thenReturn(Optional.of(ordemServico));
+
+		var acompanhamento = ordemServicoService.acompanhar(ordemServico.getCodigoAcompanhamento());
+
+		assertThat(acompanhamento.ordemServico()).isSameAs(ordemServico);
+		assertThat(acompanhamento.veiculo()).isSameAs(motoDaMaria);
+	}
+
+	@Test
+	void clienteAprovaPeloCodigoEOEstoqueEBaixado() {
+		var oleo = oleoComSaldo(10);
+		var ordemServico = osAguardandoAprovacao(oleo);
+		when(repository.buscarPorCodigoAcompanhamento(ordemServico.getCodigoAcompanhamento()))
+				.thenReturn(Optional.of(ordemServico));
+
+		ordemServicoService.aprovarOrcamentoPeloCliente(ordemServico.getCodigoAcompanhamento());
+
+		assertThat(ordemServico.getStatus()).isEqualTo(StatusOS.EM_EXECUCAO);
+		assertThat(oleo.getSaldo()).isEqualTo(8);
+		verify(repository).salvar(ordemServico);
+	}
+
+	@Test
+	void naoEncontraOsComCodigoDesconhecido() {
+		var codigo = UUID.randomUUID();
+		when(repository.buscarPorCodigoAcompanhamento(codigo)).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> ordemServicoService.rejeitarOrcamentoPeloCliente(codigo))
+				.isInstanceOf(NaoEncontradoException.class)
+				.hasMessage("Ordem de serviço não encontrada");
 	}
 
 	private ItemEstoque oleoComSaldo(int saldo) {

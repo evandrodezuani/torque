@@ -106,6 +106,19 @@ class OrdemServicoRepositoryImplTest {
     }
 
     @Test
+    void buscaPeloCodigoDeAcompanhamento() {
+        var os = OrdemServico.abrir(CLIENTE_ID, VEICULO_ID, Instant.parse("2026-10-12T10:00:00Z"));
+        repository.salvar(os);
+        recarregarDoBanco();
+
+        var lida = repository.buscarPorCodigoAcompanhamento(os.getCodigoAcompanhamento()).orElseThrow();
+
+        assertThat(lida.getId()).isEqualTo(os.getId());
+        assertThat(lida.getCodigoAcompanhamento()).isEqualTo(os.getCodigoAcompanhamento());
+        assertThat(repository.buscarPorCodigoAcompanhamento(os.getId())).isEmpty();
+    }
+
+    @Test
     void listaFiltrandoPeloStatusEOrdenandoPelaAbertura() {
         var primeira = OrdemServico.abrir(CLIENTE_ID, VEICULO_ID, Instant.parse("2026-10-12T10:00:00Z"));
         var segunda = OrdemServico.abrir(CLIENTE_ID, VEICULO_ID, Instant.parse("2026-10-12T11:00:00Z"));

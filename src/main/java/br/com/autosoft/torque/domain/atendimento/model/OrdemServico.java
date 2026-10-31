@@ -15,13 +15,14 @@ import br.com.autosoft.torque.domain.shared.RegraDeNegocioException;
 import lombok.Getter;
 
 /**
- * Raiz do agregado. O status muda como consequência dos comandos de negócio abaixo;
- * cada comando começa conferindo em que status a OS precisa estar.
+ * O status muda como consequência dos comandos de negócio
+ * tudo começa conferindo em que status a OS precisa estar.
  */
 @Getter
 public class OrdemServico {
 
 	private final UUID id;
+	private final UUID codigoAcompanhamento;
 	private final UUID clienteId;
 	private final UUID veiculoId;
 	private final Instant abertaEm;
@@ -31,9 +32,11 @@ public class OrdemServico {
 	private Instant execucaoConcluidaEm;
 	private Instant entregueEm;
 
-	public OrdemServico(UUID id, UUID clienteId, UUID veiculoId, Instant abertaEm, StatusOS status,
-			Instant execucaoIniciadaEm, Instant execucaoConcluidaEm, Instant entregueEm, List<Orcamento> orcamentos) {
+	public OrdemServico(UUID id, UUID codigoAcompanhamento, UUID clienteId, UUID veiculoId, Instant abertaEm,
+			StatusOS status, Instant execucaoIniciadaEm, Instant execucaoConcluidaEm, Instant entregueEm,
+			List<Orcamento> orcamentos) {
 		this.id = id;
+		this.codigoAcompanhamento = codigoAcompanhamento;
 		this.clienteId = clienteId;
 		this.veiculoId = veiculoId;
 		this.abertaEm = abertaEm;
@@ -48,8 +51,8 @@ public class OrdemServico {
 		if (clienteId == null || veiculoId == null) {
 			throw new RegraDeNegocioException("Cliente e veículo são obrigatórios para abrir a OS");
 		}
-		return new OrdemServico(UUID.randomUUID(), clienteId, veiculoId, horaAtual, StatusOS.RECEBIDA, null, null, null,
-				List.of(new Orcamento(1)));
+		return new OrdemServico(UUID.randomUUID(), UUID.randomUUID(), clienteId, veiculoId, horaAtual, StatusOS.RECEBIDA,
+				null, null, null, List.of(new Orcamento(1)));
 	}
 
 	public void iniciarDiagnostico() {

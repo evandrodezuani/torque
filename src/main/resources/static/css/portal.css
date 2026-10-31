@@ -1,0 +1,68 @@
+body {
+    margin: 0;
+    padding: 24px 16px;
+    background: #f3f4f6;
+    font-family: Arial, sans-serif;
+    color: #1f2937;
+}
+
+main {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 24px;
+    background: #ffffff;
+    border-radius: 8px;
+}
+
+h1 {
+    margin: 0 0 8px;
+    font-size: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+th, td {
+    padding: 8px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+.numero {
+    text-align: right;
+}
+
+.situacao {
+    display: inline-block;
+    margin: 8px 0 16px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: #e5e7eb;
+    font-size: 13px;
+}
+
+.acoes {
+    display: flex;
+    gap: 8px;
+    margin-top: 24px;
+}
+
+button {
+    padding: 10px 20px;
+    border: 0;
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.aprovar {
+    background: #15803d;
+}
+
+.rejeitar {
+    background: #b91c1c;
+}

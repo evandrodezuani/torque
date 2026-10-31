@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ public class OrdemServicoService {
 	private final ServicoRepository servicoRepository;
 	private final TipoServicoRepository tipoServicoRepository;
 	private final ItemEstoqueRepository itemEstoqueRepository;
+	private final ApplicationEventPublisher eventos;
 
 	@Transactional
 	public OrdemServico abrir(UUID clienteId, UUID veiculoId) {
@@ -136,25 +138,56 @@ public class OrdemServicoService {
 		ordemServico.concluirDiagnostico(Instant.now(), precosAtuais);
 		movimentarEstoque(ordemServico, ItemEstoque::reservar);
 		repository.salvar(ordemServico);
+		eventos.publishEvent(new OrcamentoEnviado(ordemServico.getCodigoAcompanhamento()));
 		return ordemServico;
 	}
 
 	@Transactional
 	public OrdemServico aprovarOrcamento(UUID id) {
-		var ordemServico = consultar(id);
+		return aprovar(consultar(id));
+	}
+
+	@Transactional
+	public OrdemServico rejeitarOrcamento(UUID id) {
+		return rejeitar(consultar(id));
+	}
+
+	public Acompanhamento acompanhar(UUID codigoAcompanhamento) {
+		return acompanhamento(consultarPorCodigo(codigoAcompanhamento));
+	}
+
+	@Transactional
+	public Acompanhamento aprovarOrcamentoPeloCliente(UUID codigoAcompanhamento) {
+		return acompanhamento(aprovar(consultarPorCodigo(codigoAcompanhamento)));
+	}
+
+	@Transactional
+	public Acompanhamento rejeitarOrcamentoPeloCliente(UUID codigoAcompanhamento) {
+		return acompanhamento(rejeitar(consultarPorCodigo(codigoAcompanhamento)));
+	}
+
+	private OrdemServico aprovar(OrdemServico ordemServico) {
 		ordemServico.aprovarOrcamento(Instant.now());
 		movimentarEstoque(ordemServico, ItemEstoque::baixar);
 		repository.salvar(ordemServico);
 		return ordemServico;
 	}
 
-	@Transactional
-	public OrdemServico rejeitarOrcamento(UUID id) {
-		var ordemServico = consultar(id);
+	private OrdemServico rejeitar(OrdemServico ordemServico) {
 		ordemServico.rejeitarOrcamento(Instant.now());
 		movimentarEstoque(ordemServico, ItemEstoque::liberarReserva);
 		repository.salvar(ordemServico);
 		return ordemServico;
+	}
+
+	private OrdemServico consultarPorCodigo(UUID codigoAcompanhamento) {
+		return repository.buscarPorCodigoAcompanhamento(codigoAcompanhamento)
+				.orElseThrow(() -> new NaoEncontradoException("Ordem de serviço não encontrada"));
+	}
+
+	private Acompanhamento acompanhamento(OrdemServico ordemServico) {
+		var veiculo = veiculoRepository.buscarPorId(ordemServico.getVeiculoId()).orElseThrow();
+		return new Acompanhamento(ordemServico, veiculo);
 	}
 
 	@Transactional

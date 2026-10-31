@@ -10,12 +10,13 @@ import br.com.autosoft.torque.domain.atendimento.model.OrdemServico;
 import br.com.autosoft.torque.domain.atendimento.model.SituacaoOrcamento;
 import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
 
-public record OrdemServicoResponse(UUID id, UUID clienteId, UUID veiculoId, StatusOS status, Instant abertaEm,
-        OrcamentoResponse orcamento) {
+public record OrdemServicoResponse(UUID id, UUID codigoAcompanhamento, UUID clienteId, UUID veiculoId,
+        StatusOS status, Instant abertaEm, OrcamentoResponse orcamento) {
 
     static OrdemServicoResponse paraResposta(OrdemServico ordemServico) {
-        return new OrdemServicoResponse(ordemServico.getId(), ordemServico.getClienteId(), ordemServico.getVeiculoId(),
-                ordemServico.getStatus(), ordemServico.getAbertaEm(),
+        return new OrdemServicoResponse(ordemServico.getId(), ordemServico.getCodigoAcompanhamento(),
+                ordemServico.getClienteId(), ordemServico.getVeiculoId(), ordemServico.getStatus(),
+                ordemServico.getAbertaEm(),
                 OrcamentoResponse.paraResposta(ordemServico.orcamentoAtual()));
     }
 

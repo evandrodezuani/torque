@@ -1,0 +1,8 @@
+services:
+
+  smtp:
+    image: axllent/mailpit:v1.27.0
+    container_name: torque-smtp
+    ports:
+      - "1025:1025"
+      - "8025:8025"
