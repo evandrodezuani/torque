@@ -1,9 +1,11 @@
 package br.com.autosoft.torque.infrastructure.atendimento.web;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.autosoft.torque.application.atendimento.OrdemServicoService;
 import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
+import br.com.autosoft.torque.domain.cadastro.model.TipoVeiculo;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -40,6 +43,13 @@ class OrdemServicoController {
 		return ordemServicoService.listar(status, ordem.isAscending()).stream()
 				.map(OrdemServicoResponse::paraResposta)
 				.toList();
+	}
+
+	@GetMapping("/tempo-medio-execucao")
+	public TempoMedioExecucaoResponse tempoMedioExecucao(@RequestParam(required = false) TipoVeiculo tipoVeiculo,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate de,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ate) {
+		return TempoMedioExecucaoResponse.paraResposta(ordemServicoService.tempoMedioDeExecucao(tipoVeiculo, de, ate));
 	}
 
 	@GetMapping("/{id}")

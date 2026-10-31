@@ -4,7 +4,7 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
-* N/A
+* [feature/atendimento-11](https://github.com/evandrodezuani/torque/issues/5) - Tempo médio de execução das OS concluídas
 
 ### Melhoria
 * N/A
