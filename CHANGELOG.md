@@ -4,6 +4,23 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
+* N/A
+
+### Melhoria
+* N/A
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
+## [0.11.0] - 2026-11-01
+
+### Nova Funcionalidade
 * [feature/infra](https://github.com/evandrodezuani/torque/issues/22) - Configuração docker jenkins, sonar, README
 
 ### Melhoria
