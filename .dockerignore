@@ -1,0 +1,13 @@
+.git
+.github
+.idea
+*.iml
+target
+apitest
+ci
+docker
+docs
+.env
+.env.example
+CONTEXTO.md
+HELP.md

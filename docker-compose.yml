@@ -1,4 +1,29 @@
+# Sobe a aplicação, o banco e o servidor de e-mail:   docker compose up --build
+# Sobe também o SonarQube e o Jenkins:                docker compose --profile ci up --build
+# As senhas e segredos vêm do arquivo .env (copie o .env.example).
+
 services:
+
+  postgres:
+    image: postgres:17.11-alpine
+    container_name: torque-postgres
+    environment:
+      POSTGRES_DB: torque
+      POSTGRES_USER: ${DB_USER:?defina DB_USER no .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD no .env}
+      SONAR_DB_USER: ${SONAR_DB_USER:-sonar}
+      SONAR_DB_PASSWORD: ${SONAR_DB_PASSWORD:-sonar}
+    ports:
+      # 5433 na máquina, para não brigar com um PostgreSQL local na 5432
+      - "5433:5432"
+    volumes:
+      - postgres-dados:/var/lib/postgresql/data
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d torque"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   smtp:
     image: axllent/mailpit:v1.27.0
@@ -6,3 +31,68 @@ services:
     ports:
       - "1025:1025"
       - "8025:8025"
+
+  app:
+    build: .
+    image: torque:local
+    container_name: torque-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      smtp:
+        condition: service_started
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/torque
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      MAIL_HOST: smtp
+      MAIL_PORT: 1025
+      PORTAL_URL: http://localhost:8080/portal
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
+      TORQUE_ADMIN_EMAIL: ${TORQUE_ADMIN_EMAIL:?defina TORQUE_ADMIN_EMAIL no .env}
+      TORQUE_ADMIN_SENHA: ${TORQUE_ADMIN_SENHA:?defina TORQUE_ADMIN_SENHA no .env}
+      TORQUE_DEMO_SENHA: ${TORQUE_DEMO_SENHA:-}
+    ports:
+      - "8080:8080"
+
+  sonarqube:
+    profiles: [ci]
+    image: sonarqube:26.10.0.133078-community
+    container_name: torque-sonarqube
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/sonar
+      SONAR_JDBC_USERNAME: ${SONAR_DB_USER:-sonar}
+      SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:-sonar}
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonar-dados:/opt/sonarqube/data
+      - sonar-extensoes:/opt/sonarqube/extensions
+      - sonar-logs:/opt/sonarqube/logs
+
+  jenkins:
+    profiles: [ci]
+    build: ./ci/jenkins
+    image: torque-jenkins:local
+    container_name: torque-jenkins
+    depends_on:
+      - sonarqube
+    environment:
+      JENKINS_ADMIN_USER: ${JENKINS_ADMIN_USER:?defina JENKINS_ADMIN_USER no .env}
+      JENKINS_ADMIN_SENHA: ${JENKINS_ADMIN_SENHA:?defina JENKINS_ADMIN_SENHA no .env}
+      SONAR_TOKEN: ${SONAR_TOKEN:-}
+    ports:
+      # 8090 na máquina, porque a 8080 é da aplicação
+      - "8090:8080"
+    volumes:
+      - jenkins-dados:/var/jenkins_home
+
+volumes:
+  postgres-dados:
+  sonar-dados:
+  sonar-extensoes:
+  sonar-logs:
+  jenkins-dados:
