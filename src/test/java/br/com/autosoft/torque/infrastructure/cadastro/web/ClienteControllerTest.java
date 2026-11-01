@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.atendente;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ class ClienteControllerTest {
     void cadastraEConsultaOCliente() throws Exception {
         var id = cadastrar(MARIA);
 
-        mockMvc.perform(get("/clientes/" + id))
+        mockMvc.perform(get("/clientes/" + id).with(atendente()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.documento").value("52998224725"))
                 .andExpect(jsonPath("$.nome").value("Maria Souza"));
@@ -46,7 +47,7 @@ class ClienteControllerTest {
 
     @Test
     void recusaDocumentoInvalido() throws Exception {
-        mockMvc.perform(post("/clientes").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/clientes").with(atendente()).contentType(MediaType.APPLICATION_JSON)
                         .content(MARIA.replace("529.982.247-25", "529.982.247-00")))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("CPF ou CNPJ inválido"));
@@ -54,7 +55,7 @@ class ClienteControllerTest {
 
     @Test
     void recusaPedidoSemNome() throws Exception {
-        mockMvc.perform(post("/clientes").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/clientes").with(atendente()).contentType(MediaType.APPLICATION_JSON)
                         .content(MARIA.replace("\"Maria Souza\"", "\"\"")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail").exists());
@@ -64,7 +65,7 @@ class ClienteControllerTest {
     void naoDeixaAlterarODocumento() throws Exception {
         var id = cadastrar(MARIA);
 
-        mockMvc.perform(put("/clientes/" + id).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(put("/clientes/" + id).with(atendente()).contentType(MediaType.APPLICATION_JSON)
                         .content(MARIA.replace("529.982.247-25", "11.222.333/0001-81")))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("O documento não pode ser alterado"));
@@ -74,14 +75,14 @@ class ClienteControllerTest {
     void removeOCliente() throws Exception {
         var id = cadastrar(MARIA);
 
-        mockMvc.perform(delete("/clientes/" + id)).andExpect(status().isNoContent());
-        mockMvc.perform(get("/clientes/" + id))
+        mockMvc.perform(delete("/clientes/" + id).with(atendente())).andExpect(status().isNoContent());
+        mockMvc.perform(get("/clientes/" + id).with(atendente()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.detail").value("Cliente não encontrado"));
     }
 
     private String cadastrar(String json) throws Exception {
-        var resposta = mockMvc.perform(post("/clientes").contentType(MediaType.APPLICATION_JSON).content(json))
+        var resposta = mockMvc.perform(post("/clientes").with(atendente()).contentType(MediaType.APPLICATION_JSON).content(json))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return JsonPath.read(resposta, "$.id");

@@ -22,6 +22,7 @@ public class ClienteService {
 	private final ClienteRepository repository;
 	private final OrdemServicoRepository ordemServicoRepository;
 	private final VeiculoRepository veiculoRepository;
+	private final AcessoDoCliente acessoDoCliente;
 
 	@Transactional
 	public Cliente cadastrar(String documento, String nome, String email, String telefone) {
@@ -30,7 +31,11 @@ public class ClienteService {
 			throw new RegraDeNegocioException("Já existe cliente com este documento");
 		}
 		var cliente = Cliente.cadastrar(documentoDoCliente, nome, email, telefone);
+		if (repository.existePorEmail(cliente.getEmail())) {
+			throw new RegraDeNegocioException("Já existe cliente com este e-mail");
+		}
 		repository.salvar(cliente);
+		acessoDoCliente.liberar(cliente);
 		return cliente;
 	}
 
@@ -46,7 +51,11 @@ public class ClienteService {
 	@Transactional
 	public Cliente alterar(UUID id, String documento, String nome, String email, String telefone) {
 		var cliente = consultar(id);
+		var emailAnterior = cliente.getEmail();
 		cliente.alterar(new Documento(documento), nome, email, telefone);
+		if (!cliente.getEmail().equals(emailAnterior) && repository.existePorEmail(cliente.getEmail())) {
+			throw new RegraDeNegocioException("Já existe cliente com este e-mail");
+		}
 		repository.salvar(cliente);
 		return cliente;
 	}
@@ -59,6 +68,7 @@ public class ClienteService {
 		}
 		ordemServicoRepository.removerPorCliente(id);
 		veiculoRepository.removerPorCliente(id);
+		acessoDoCliente.remover(id);
 		repository.remover(id);
 	}
 

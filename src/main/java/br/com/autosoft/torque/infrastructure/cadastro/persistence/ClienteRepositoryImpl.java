@@ -38,6 +38,21 @@ class ClienteRepositoryImpl implements ClienteRepository {
 	}
 
 	@Override
+	public boolean existePorEmail(String email) {
+		return jpaRepository.existsByEmail(email);
+	}
+
+	@Override
+	public Optional<Cliente> buscarPorEmail(String email) {
+		return jpaRepository.findByEmail(email).map(this::paraDominio);
+	}
+
+	@Override
+	public Optional<Cliente> buscarPorDocumento(Documento documento) {
+		return jpaRepository.findByDocumento(documento.numero()).map(this::paraDominio);
+	}
+
+	@Override
 	public void remover(UUID id) {
 		jpaRepository.deleteById(id);
 	}

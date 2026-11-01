@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.almoxarife;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,7 @@ class ItemEstoqueControllerTest {
 
 	@Test
 	void cadastraComSaldoZerado() throws Exception {
-		mockMvc.perform(post("/itens-estoque").contentType(MediaType.APPLICATION_JSON).content(FILTRO_DE_OLEO))
+		mockMvc.perform(post("/itens-estoque").with(almoxarife()).contentType(MediaType.APPLICATION_JSON).content(FILTRO_DE_OLEO))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.tipo").value("PECA"))
 				.andExpect(jsonPath("$.saldo").value(0))
@@ -47,14 +48,14 @@ class ItemEstoqueControllerTest {
 	void recusaDescricaoRepetida() throws Exception {
 		cadastrar(FILTRO_DE_OLEO);
 
-		mockMvc.perform(post("/itens-estoque").contentType(MediaType.APPLICATION_JSON).content(FILTRO_DE_OLEO))
+		mockMvc.perform(post("/itens-estoque").with(almoxarife()).contentType(MediaType.APPLICATION_JSON).content(FILTRO_DE_OLEO))
 				.andExpect(status().isUnprocessableContent())
 				.andExpect(jsonPath("$.detail").value("Já existe item de estoque com esta descrição"));
 	}
 
 	@Test
 	void recusaTipoDesconhecido() throws Exception {
-		mockMvc.perform(post("/itens-estoque").contentType(MediaType.APPLICATION_JSON)
+		mockMvc.perform(post("/itens-estoque").with(almoxarife()).contentType(MediaType.APPLICATION_JSON)
 						.content(FILTRO_DE_OLEO.replace("PECA", "FERRAMENTA")))
 				.andExpect(status().isBadRequest());
 	}
@@ -82,7 +83,7 @@ class ItemEstoqueControllerTest {
 	void alteraOPreco() throws Exception {
 		var id = cadastrar(FILTRO_DE_OLEO);
 
-		mockMvc.perform(put("/itens-estoque/" + id).contentType(MediaType.APPLICATION_JSON)
+		mockMvc.perform(put("/itens-estoque/" + id).with(almoxarife()).contentType(MediaType.APPLICATION_JSON)
 						.content(FILTRO_DE_OLEO.replace("35.00", "38.00")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.preco").value(38.00));
@@ -92,21 +93,21 @@ class ItemEstoqueControllerTest {
 	void removeOItem() throws Exception {
 		var id = cadastrar(FILTRO_DE_OLEO);
 
-		mockMvc.perform(delete("/itens-estoque/" + id)).andExpect(status().isNoContent());
-		mockMvc.perform(get("/itens-estoque/" + id))
+		mockMvc.perform(delete("/itens-estoque/" + id).with(almoxarife())).andExpect(status().isNoContent());
+		mockMvc.perform(get("/itens-estoque/" + id).with(almoxarife()))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.detail").value("Item de estoque não encontrado"));
 	}
 
 	private String cadastrar(String json) throws Exception {
-		var resposta = mockMvc.perform(post("/itens-estoque").contentType(MediaType.APPLICATION_JSON).content(json))
+		var resposta = mockMvc.perform(post("/itens-estoque").with(almoxarife()).contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isCreated())
 				.andReturn().getResponse().getContentAsString();
 		return JsonPath.read(resposta, "$.id");
 	}
 
 	private ResultActions registrarEntrada(String id, int quantidade) throws Exception {
-		return mockMvc.perform(post("/itens-estoque/" + id + "/entradas").contentType(MediaType.APPLICATION_JSON)
+		return mockMvc.perform(post("/itens-estoque/" + id + "/entradas").with(almoxarife()).contentType(MediaType.APPLICATION_JSON)
 				.content("{ \"quantidade\": " + quantidade + " }"));
 	}
 

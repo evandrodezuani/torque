@@ -46,7 +46,7 @@ public class Cliente {
 		}
 
 		this.nome = nome;
-		this.email = email;
+		this.email = email.trim().toLowerCase();
 		this.telefone = telefone;
 	}
 

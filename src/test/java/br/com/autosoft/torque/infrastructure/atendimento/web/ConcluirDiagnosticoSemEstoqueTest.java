@@ -5,6 +5,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.almoxarife;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.atendente;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.mecanico;
 
 import java.util.UUID;
 
@@ -55,18 +58,18 @@ class ConcluirDiagnosticoSemEstoqueTest {
         incluirPeca(id, FILTRO, 2);
         incluirPeca(id, OLEO, 3);
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico").with(mecanico()))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("Estoque insuficiente para Óleo 10W30 1 L"));
 
-        mockMvc.perform(get("/itens-estoque/" + FILTRO)).andExpect(jsonPath("$.reservado").value(0));
-        mockMvc.perform(get("/itens-estoque/" + OLEO)).andExpect(jsonPath("$.reservado").value(0));
+        mockMvc.perform(get("/itens-estoque/" + FILTRO).with(almoxarife())).andExpect(jsonPath("$.reservado").value(0));
+        mockMvc.perform(get("/itens-estoque/" + OLEO).with(almoxarife())).andExpect(jsonPath("$.reservado").value(0));
         var ordemServico = ordemServicoRepository.buscarPorId(UUID.fromString(id)).orElseThrow();
         assertThat(ordemServico.getStatus()).isEqualTo(StatusOS.EM_DIAGNOSTICO);
     }
 
     private String abrirEmDiagnostico() throws Exception {
-        var resposta = mockMvc.perform(post("/ordens-servico").contentType(MediaType.APPLICATION_JSON)
+        var resposta = mockMvc.perform(post("/ordens-servico").with(atendente()).contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "clienteId": "3f2a1c4e-8b7d-4e6f-9a1b-2c3d4e5f6a7b",
@@ -76,12 +79,12 @@ class ConcluirDiagnosticoSemEstoqueTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String id = JsonPath.read(resposta, "$.id");
-        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico").with(mecanico())).andExpect(status().isOk());
         return id;
     }
 
     private void incluirPeca(String id, String itemEstoqueId, int quantidade) throws Exception {
-        mockMvc.perform(post("/ordens-servico/" + id + "/pecas").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/ordens-servico/" + id + "/pecas").with(mecanico()).contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"itemEstoqueId\": \"" + itemEstoqueId + "\", \"quantidade\": " + quantidade + " }"))
                 .andExpect(status().isOk());
     }

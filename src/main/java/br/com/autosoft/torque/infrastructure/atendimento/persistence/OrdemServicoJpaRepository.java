@@ -12,6 +12,10 @@ interface OrdemServicoJpaRepository extends JpaRepository<OrdemServicoEntity, UU
 
     List<OrdemServicoEntity> findByStatus(StatusOS status, Sort sort);
 
+    List<OrdemServicoEntity> findByClienteId(UUID clienteId, Sort sort);
+
+    List<OrdemServicoEntity> findByClienteIdAndStatus(UUID clienteId, StatusOS status, Sort sort);
+
     Optional<OrdemServicoEntity> findByCodigoAcompanhamento(UUID codigoAcompanhamento);
 
     boolean existsByClienteIdAndStatusNot(UUID clienteId, StatusOS status);

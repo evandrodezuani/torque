@@ -6,6 +6,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.almoxarife;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.atendente;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.gerente;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.mecanico;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,7 +56,7 @@ class OrdemServicoControllerTest {
 
     @Test
     void abreAOrdemDeServicoComOOrcamentoEmElaboracao() throws Exception {
-        mockMvc.perform(post("/ordens-servico").contentType(MediaType.APPLICATION_JSON).content(OS_DA_MOTO_DA_MARIA))
+        mockMvc.perform(post("/ordens-servico").with(atendente()).contentType(MediaType.APPLICATION_JSON).content(OS_DA_MOTO_DA_MARIA))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.status").value("RECEBIDA"))
@@ -63,7 +67,7 @@ class OrdemServicoControllerTest {
 
     @Test
     void recusaPedidoSemVeiculo() throws Exception {
-        mockMvc.perform(post("/ordens-servico")
+        mockMvc.perform(post("/ordens-servico").with(atendente())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
 								{ "clienteId": "3f2a1c4e-8b7d-4e6f-9a1b-2c3d4e5f6a7b" }
@@ -73,7 +77,7 @@ class OrdemServicoControllerTest {
 
     @Test
     void naoAbreComVeiculoDeOutroCliente() throws Exception {
-        mockMvc.perform(post("/ordens-servico").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/ordens-servico").with(atendente()).contentType(MediaType.APPLICATION_JSON)
                         .content(OS_DA_MOTO_DA_MARIA.replace("3f2a1c4e-8b7d-4e6f-9a1b-2c3d4e5f6a7b",
                                 "9c8b7a6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d")))
                 .andExpect(status().isUnprocessableContent())
@@ -82,7 +86,7 @@ class OrdemServicoControllerTest {
 
     @Test
     void naoAbreComVeiculoQueNaoExiste() throws Exception {
-        mockMvc.perform(post("/ordens-servico").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/ordens-servico").with(atendente()).contentType(MediaType.APPLICATION_JSON)
                         .content(OS_DA_MOTO_DA_MARIA.replace("7b6a5f4e-3d2c-4b1a-9f8e-7d6c5b4a3f2e",
                                 "00000000-0000-0000-0000-000000000000")))
                 .andExpect(status().isNotFound())
@@ -93,7 +97,7 @@ class OrdemServicoControllerTest {
     void iniciaODiagnostico() throws Exception {
         var id = abrir();
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico").with(mecanico()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("EM_DIAGNOSTICO"));
     }
@@ -101,16 +105,16 @@ class OrdemServicoControllerTest {
     @Test
     void naoIniciaODiagnosticoDuasVezes() throws Exception {
         var id = abrir();
-        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico").with(mecanico())).andExpect(status().isOk());
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico").with(mecanico()))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("Só é possível iniciar o diagnóstico de uma OS recebida"));
     }
 
     @Test
     void naoIniciaODiagnosticoDeOsQueNaoExiste() throws Exception {
-        mockMvc.perform(post("/ordens-servico/00000000-0000-0000-0000-000000000000/iniciar-diagnostico"))
+        mockMvc.perform(post("/ordens-servico/00000000-0000-0000-0000-000000000000/iniciar-diagnostico").with(mecanico()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.detail").value("Ordem de serviço não encontrada"));
     }
@@ -181,7 +185,7 @@ class OrdemServicoControllerTest {
         var id = abrirEmDiagnostico();
         incluirPeca(id, OLEO_10W30, 2);
 
-        mockMvc.perform(get("/ordens-servico/" + id))
+        mockMvc.perform(get("/ordens-servico/" + id).with(atendente()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("EM_DIAGNOSTICO"))
                 .andExpect(jsonPath("$.orcamento.pecas[0].quantidade").value(2))
@@ -190,7 +194,7 @@ class OrdemServicoControllerTest {
 
     @Test
     void naoEncontraOrdemDeServicoQueNaoExiste() throws Exception {
-        mockMvc.perform(get("/ordens-servico/00000000-0000-0000-0000-000000000000"))
+        mockMvc.perform(get("/ordens-servico/00000000-0000-0000-0000-000000000000").with(atendente()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.detail").value("Ordem de serviço não encontrada"));
     }
@@ -200,7 +204,7 @@ class OrdemServicoControllerTest {
         var recebida = abrir();
         var emDiagnostico = abrirEmDiagnostico();
 
-        mockMvc.perform(get("/ordens-servico"))
+        mockMvc.perform(get("/ordens-servico").with(atendente()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[?(@.id == '" + recebida + "')].status").value("RECEBIDA"))
@@ -213,12 +217,12 @@ class OrdemServicoControllerTest {
         incluirServico(id, TROCA_DE_OLEO_MOTO, 1);
         incluirPeca(id, OLEO_10W30, 11);
 
-        mockMvc.perform(delete("/ordens-servico/" + id + "/pecas/" + OLEO_10W30))
+        mockMvc.perform(delete("/ordens-servico/" + id + "/pecas/" + OLEO_10W30).with(mecanico()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orcamento.pecas.length()").value(0))
                 .andExpect(jsonPath("$.orcamento.total").value(50.00));
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico").with(mecanico()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("AGUARDANDO_APROVACAO"));
     }
@@ -228,7 +232,7 @@ class OrdemServicoControllerTest {
         var id = abrirEmDiagnostico();
         incluirServico(id, TROCA_DE_OLEO_MOTO, 1);
 
-        mockMvc.perform(delete("/ordens-servico/" + id + "/servicos/" + TROCA_DE_OLEO_MOTO))
+        mockMvc.perform(delete("/ordens-servico/" + id + "/servicos/" + TROCA_DE_OLEO_MOTO).with(mecanico()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orcamento.servicos.length()").value(0));
     }
@@ -237,7 +241,7 @@ class OrdemServicoControllerTest {
     void naoRemoveItemQueNaoEstaNoOrcamento() throws Exception {
         var id = abrirEmDiagnostico();
 
-        mockMvc.perform(delete("/ordens-servico/" + id + "/pecas/" + OLEO_10W30))
+        mockMvc.perform(delete("/ordens-servico/" + id + "/pecas/" + OLEO_10W30).with(mecanico()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.detail").value("Peça ou insumo não encontrado no orçamento"));
     }
@@ -248,12 +252,12 @@ class OrdemServicoControllerTest {
         incluirServico(id, TROCA_DE_OLEO_MOTO, 1);
         incluirPeca(id, OLEO_10W30, 2);
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico").with(mecanico()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("AGUARDANDO_APROVACAO"))
                 .andExpect(jsonPath("$.orcamento.situacao").value("PENDENTE"));
 
-        mockMvc.perform(get("/itens-estoque/" + OLEO_10W30))
+        mockMvc.perform(get("/itens-estoque/" + OLEO_10W30).with(almoxarife()))
                 .andExpect(jsonPath("$.saldo").value(10))
                 .andExpect(jsonPath("$.reservado").value(2));
     }
@@ -262,7 +266,7 @@ class OrdemServicoControllerTest {
     void naoConcluiODiagnosticoComOrcamentoVazio() throws Exception {
         var id = abrirEmDiagnostico();
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico").with(mecanico()))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("O orçamento precisa de pelo menos um serviço ou peça"));
     }
@@ -272,7 +276,7 @@ class OrdemServicoControllerTest {
         var id = abrirEmDiagnostico();
         incluirPeca(id, OLEO_10W30, 11);
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico").with(mecanico()))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("Estoque insuficiente para Óleo 10W30 1 L"));
     }
@@ -305,12 +309,12 @@ class OrdemServicoControllerTest {
     void aprovarIniciaAExecucaoEBaixaOEstoque() throws Exception {
         var id = abrirComOrcamentoEnviado();
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento").with(atendente()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("EM_EXECUCAO"))
                 .andExpect(jsonPath("$.orcamento.situacao").value("APROVADO"));
 
-        mockMvc.perform(get("/itens-estoque/" + OLEO_10W30))
+        mockMvc.perform(get("/itens-estoque/" + OLEO_10W30).with(almoxarife()))
                 .andExpect(jsonPath("$.saldo").value(8))
                 .andExpect(jsonPath("$.reservado").value(0));
     }
@@ -319,12 +323,12 @@ class OrdemServicoControllerTest {
     void rejeitarLiberaAReserva() throws Exception {
         var id = abrirComOrcamentoEnviado();
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/rejeitar-orcamento"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/rejeitar-orcamento").with(atendente()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJEITADA"))
                 .andExpect(jsonPath("$.orcamento.situacao").value("REJEITADO"));
 
-        mockMvc.perform(get("/itens-estoque/" + OLEO_10W30))
+        mockMvc.perform(get("/itens-estoque/" + OLEO_10W30).with(almoxarife()))
                 .andExpect(jsonPath("$.saldo").value(10))
                 .andExpect(jsonPath("$.reservado").value(0));
     }
@@ -332,9 +336,9 @@ class OrdemServicoControllerTest {
     @Test
     void revisarCriaOOrcamentoSeguinteComAsLinhasDoAnterior() throws Exception {
         var id = abrirComOrcamentoEnviado();
-        mockMvc.perform(post("/ordens-servico/" + id + "/rejeitar-orcamento")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/rejeitar-orcamento").with(atendente())).andExpect(status().isOk());
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/revisar-orcamento"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/revisar-orcamento").with(mecanico()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("EM_DIAGNOSTICO"))
                 .andExpect(jsonPath("$.orcamento.numero").value(2))
@@ -346,7 +350,7 @@ class OrdemServicoControllerTest {
     void naoAprovaOrcamentoQueAindaNaoFoiEnviado() throws Exception {
         var id = abrirEmDiagnostico();
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento").with(atendente()))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("Só é possível aprovar o orçamento de uma OS aguardando aprovação"));
     }
@@ -354,13 +358,13 @@ class OrdemServicoControllerTest {
     @Test
     void concluiOServicoEEntregaOVeiculo() throws Exception {
         var id = abrirComOrcamentoEnviado();
-        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento").with(atendente())).andExpect(status().isOk());
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-servico"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-servico").with(mecanico()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("FINALIZADA"));
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/entregar-veiculo"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/entregar-veiculo").with(atendente()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ENTREGUE"));
     }
@@ -370,7 +374,7 @@ class OrdemServicoControllerTest {
         var id = abrirEmDiagnostico();
         incluirPeca(id, OLEO_10W30, 2);
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/entregar-veiculo"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/entregar-veiculo").with(atendente()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ENTREGUE"));
     }
@@ -378,9 +382,9 @@ class OrdemServicoControllerTest {
     @Test
     void naoEntregaOVeiculoComOServicoEmExecucao() throws Exception {
         var id = abrirComOrcamentoEnviado();
-        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento").with(atendente())).andExpect(status().isOk());
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/entregar-veiculo"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/entregar-veiculo").with(atendente()))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail")
                         .value("Só é possível entregar o veículo de uma OS recebida, em diagnóstico, rejeitada ou finalizada"));
@@ -390,7 +394,7 @@ class OrdemServicoControllerTest {
     void naoConcluiOServicoAntesDaAprovacao() throws Exception {
         var id = abrirComOrcamentoEnviado();
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-servico"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-servico").with(mecanico()))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("Só é possível concluir o serviço de uma OS em execução"));
     }
@@ -400,7 +404,7 @@ class OrdemServicoControllerTest {
         var recebida = abrir();
         abrirEmDiagnostico();
 
-        mockMvc.perform(get("/ordens-servico").param("status", "RECEBIDA").param("ordem", "ASC"))
+        mockMvc.perform(get("/ordens-servico").with(atendente()).param("status", "RECEBIDA").param("ordem", "ASC"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value(recebida));
@@ -408,8 +412,8 @@ class OrdemServicoControllerTest {
 
     @Test
     void recusaStatusOuOrdemDesconhecidos() throws Exception {
-        mockMvc.perform(get("/ordens-servico").param("status", "PARADA")).andExpect(status().isBadRequest());
-        mockMvc.perform(get("/ordens-servico").param("ordem", "aleatoria")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/ordens-servico").with(atendente()).param("status", "PARADA")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/ordens-servico").with(atendente()).param("ordem", "aleatoria")).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -418,10 +422,10 @@ class OrdemServicoControllerTest {
         incluirServico(id, TROCA_DE_OLEO_MOTO, 1);
         incluirPeca(id, OLEO_10W30, 1);
 
-        mockMvc.perform(delete("/servicos/" + TROCA_DE_OLEO_MOTO))
+        mockMvc.perform(delete("/servicos/" + TROCA_DE_OLEO_MOTO).with(gerente()))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("O serviço já foi usado em orçamentos e não pode ser removido"));
-        mockMvc.perform(delete("/itens-estoque/" + OLEO_10W30))
+        mockMvc.perform(delete("/itens-estoque/" + OLEO_10W30).with(almoxarife()))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("O item já foi usado em orçamentos e não pode ser removido"));
     }
@@ -430,7 +434,7 @@ class OrdemServicoControllerTest {
     void tempoMedioSemOsConcluidaDevolveZeroENulos() throws Exception {
         abrirComOrcamentoEnviado();
 
-        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao"))
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").with(gerente()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ordensConsideradas").value(0))
                 .andExpect(jsonPath("$.tempoMedioEmMinutos").isEmpty())
@@ -441,10 +445,10 @@ class OrdemServicoControllerTest {
     @Test
     void tempoMedioConsideraAOsComOServicoConcluido() throws Exception {
         var id = abrirComOrcamentoEnviado();
-        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento")).andExpect(status().isOk());
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-servico")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento").with(atendente())).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-servico").with(mecanico())).andExpect(status().isOk());
 
-        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao"))
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").with(gerente()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.ordensConsideradas").value(1))
                 .andExpect(jsonPath("$.tempoMedioEmMinutos").value(0))
@@ -455,23 +459,23 @@ class OrdemServicoControllerTest {
     @Test
     void tempoMedioFiltraPeloTipoDoVeiculo() throws Exception {
         var id = abrirComOrcamentoEnviado();
-        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento")).andExpect(status().isOk());
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-servico")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/aprovar-orcamento").with(atendente())).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-servico").with(mecanico())).andExpect(status().isOk());
 
-        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").param("tipoVeiculo", "MOTO"))
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").with(gerente()).param("tipoVeiculo", "MOTO"))
                 .andExpect(jsonPath("$.ordensConsideradas").value(1));
-        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").param("tipoVeiculo", "CARRO"))
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").with(gerente()).param("tipoVeiculo", "CARRO"))
                 .andExpect(jsonPath("$.ordensConsideradas").value(0));
-        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").param("tipoVeiculo", "BICICLETA"))
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").with(gerente()).param("tipoVeiculo", "BICICLETA"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void tempoMedioRecusaPeriodoInvertidoEDataInvalida() throws Exception {
-        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").param("de", "2026-10-31").param("ate", "2026-10-01"))
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").with(gerente()).param("de", "2026-10-31").param("ate", "2026-10-01"))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("A data inicial não pode ser depois da data final"));
-        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").param("de", "31/10/2026"))
+        mockMvc.perform(get("/ordens-servico/tempo-medio-execucao").with(gerente()).param("de", "31/10/2026"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -484,11 +488,11 @@ class OrdemServicoControllerTest {
     }
 
     private ResultActions concluirDiagnostico(String id) throws Exception {
-        return mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico"));
+        return mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico").with(mecanico()));
     }
 
     private void alterarTrocaDeOleoMoto(String preco, boolean ativo) throws Exception {
-        mockMvc.perform(put("/servicos/" + TROCA_DE_OLEO_MOTO).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(put("/servicos/" + TROCA_DE_OLEO_MOTO).with(gerente()).contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "tipoServicoId": "5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
@@ -501,23 +505,23 @@ class OrdemServicoControllerTest {
     }
 
     private ResultActions incluirServico(String id, String servicoId, int quantidade) throws Exception {
-        return mockMvc.perform(post("/ordens-servico/" + id + "/servicos").contentType(MediaType.APPLICATION_JSON)
+        return mockMvc.perform(post("/ordens-servico/" + id + "/servicos").with(mecanico()).contentType(MediaType.APPLICATION_JSON)
                 .content("{ \"servicoId\": \"" + servicoId + "\", \"quantidade\": " + quantidade + " }"));
     }
 
     private ResultActions incluirPeca(String id, String itemEstoqueId, int quantidade) throws Exception {
-        return mockMvc.perform(post("/ordens-servico/" + id + "/pecas").contentType(MediaType.APPLICATION_JSON)
+        return mockMvc.perform(post("/ordens-servico/" + id + "/pecas").with(mecanico()).contentType(MediaType.APPLICATION_JSON)
                 .content("{ \"itemEstoqueId\": \"" + itemEstoqueId + "\", \"quantidade\": " + quantidade + " }"));
     }
 
     private String abrirEmDiagnostico() throws Exception {
         var id = abrir();
-        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico").with(mecanico())).andExpect(status().isOk());
         return id;
     }
 
     private String abrir() throws Exception {
-        var resposta = mockMvc.perform(post("/ordens-servico").contentType(MediaType.APPLICATION_JSON)
+        var resposta = mockMvc.perform(post("/ordens-servico").with(atendente()).contentType(MediaType.APPLICATION_JSON)
                         .content(OS_DA_MOTO_DA_MARIA))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();

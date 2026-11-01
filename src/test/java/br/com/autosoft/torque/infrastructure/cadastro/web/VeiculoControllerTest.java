@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.atendente;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +50,7 @@ class VeiculoControllerTest {
         cadastrar(MOTO.replace("bra-2e19", "ABC1234").replace("MOTO", "CARRO").replace("CG 160", "Uno")
                 .replace("Honda", "Fiat"));
 
-        mockMvc.perform(get(VEICULOS_DA_MARIA))
+        mockMvc.perform(get(VEICULOS_DA_MARIA).with(atendente()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[?(@.placa == 'BRA2E19')].tipo").value("MOTO"))
@@ -58,14 +59,14 @@ class VeiculoControllerTest {
 
     @Test
     void recusaVeiculoSemTipo() throws Exception {
-        mockMvc.perform(post(VEICULOS_DA_MARIA).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post(VEICULOS_DA_MARIA).with(atendente()).contentType(MediaType.APPLICATION_JSON)
                         .content(MOTO.replace("\"tipo\": \"MOTO\",", "")))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void recusaPlacaInvalida() throws Exception {
-        mockMvc.perform(post(VEICULOS_DA_MARIA).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post(VEICULOS_DA_MARIA).with(atendente()).contentType(MediaType.APPLICATION_JSON)
                         .content(MOTO.replace("bra-2e19", "BR-12345")))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("Placa inválida"));
@@ -75,7 +76,7 @@ class VeiculoControllerTest {
     void naoMostraVeiculoPeloEnderecoDeOutroCliente() throws Exception {
         var id = cadastrar(MOTO);
 
-        mockMvc.perform(get(VEICULOS_DO_OUTRO_CLIENTE + "/" + id))
+        mockMvc.perform(get(VEICULOS_DO_OUTRO_CLIENTE + "/" + id).with(atendente()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.detail").value("Veículo não encontrado"));
     }
@@ -84,7 +85,7 @@ class VeiculoControllerTest {
     void naoDeixaAlterarAPlaca() throws Exception {
         var id = cadastrar(MOTO);
 
-        mockMvc.perform(put(VEICULOS_DA_MARIA + "/" + id).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(put(VEICULOS_DA_MARIA + "/" + id).with(atendente()).contentType(MediaType.APPLICATION_JSON)
                         .content(MOTO.replace("bra-2e19", "ABC1234")))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.detail").value("A placa não pode ser alterada"));
@@ -94,12 +95,12 @@ class VeiculoControllerTest {
     void removeOVeiculo() throws Exception {
         var id = cadastrar(MOTO);
 
-        mockMvc.perform(delete(VEICULOS_DA_MARIA + "/" + id)).andExpect(status().isNoContent());
-        mockMvc.perform(get(VEICULOS_DA_MARIA + "/" + id)).andExpect(status().isNotFound());
+        mockMvc.perform(delete(VEICULOS_DA_MARIA + "/" + id).with(atendente())).andExpect(status().isNoContent());
+        mockMvc.perform(get(VEICULOS_DA_MARIA + "/" + id).with(atendente())).andExpect(status().isNotFound());
     }
 
     private String cadastrar(String json) throws Exception {
-        var resposta = mockMvc.perform(post(VEICULOS_DA_MARIA).contentType(MediaType.APPLICATION_JSON).content(json))
+        var resposta = mockMvc.perform(post(VEICULOS_DA_MARIA).with(atendente()).contentType(MediaType.APPLICATION_JSON).content(json))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.clienteId").value("3f2a1c4e-8b7d-4e6f-9a1b-2c3d4e5f6a7b"))
                 .andReturn().getResponse().getContentAsString();

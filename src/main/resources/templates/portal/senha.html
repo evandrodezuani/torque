@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Crie a sua senha</title>
+    <link rel="stylesheet" th:href="@{/css/portal.css}">
+</head>
+<body>
+<main>
+    <h1>Crie a sua senha</h1>
+    <p>Use de 8 a 72 caracteres. Depois, entre com o seu e-mail e esta senha.</p>
+    <p class="erro" th:if="${erro}" th:text="${erro}">A senha precisa ter de 8 a 72 caracteres</p>
+    <form method="post" th:action="@{/portal/senha}">
+        <input type="hidden" name="token" th:value="${token}">
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" minlength="8" maxlength="72" required
+               autocomplete="new-password">
+        <div class="acoes">
+            <button type="submit" class="aprovar">Criar a senha</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

@@ -18,6 +18,23 @@
 ### Atualização de banco de dados
 * N/A
 
+## [0.10.0] - 2026-10-31
+
+### Nova Funcionalidade
+* [feature/seguranca](https://github.com/evandrodezuani/torque/issues/21) - Autenticação JWT nas APIs, configurações de papeis, e o login é por e-mail
+
+### Melhoria
+* N/A
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
 ## [0.9.0] - 2026-10-31
 
 ### Nova Funcionalidade

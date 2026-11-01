@@ -57,4 +57,11 @@ class ClienteTest {
         assertThat(cliente.getNome()).isEqualTo("Maria S. Lima");
     }
 
+    @Test
+    void guardaOEmailSemEspacosEEmMinusculas() {
+        var cliente = Cliente.cadastrar(cpf, "Maria Souza", "  Maria.Souza@Email.COM ", null);
+
+        assertThat(cliente.getEmail()).isEqualTo("maria.souza@email.com");
+    }
+
 }
