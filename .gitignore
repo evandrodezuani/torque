@@ -34,3 +34,6 @@ build/
 
 ### Segredos do docker-compose ###
 .env
+
+### Configuração local dos testes de API ###
+apitest/src/test/resources/application.properties

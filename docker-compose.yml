@@ -66,6 +66,8 @@ services:
       SONAR_JDBC_URL: jdbc:postgresql://postgres:5432/sonar
       SONAR_JDBC_USERNAME: ${SONAR_DB_USER:-sonar}
       SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:-sonar}
+    # Libera o webhook para o Jenkins, que está na rede interna do Docker. O Sonar bloqueia endereços
+    command: ["-Dsonar.validateWebhooks=false"]
     ports:
       - "9000:9000"
     volumes:
@@ -79,11 +81,22 @@ services:
     image: torque-jenkins:local
     container_name: torque-jenkins
     depends_on:
-      - sonarqube
+      postgres:
+        condition: service_healthy
+      smtp:
+        condition: service_started
+      sonarqube:
+        condition: service_started
     environment:
       JENKINS_ADMIN_USER: ${JENKINS_ADMIN_USER:?defina JENKINS_ADMIN_USER no .env}
       JENKINS_ADMIN_SENHA: ${JENKINS_ADMIN_SENHA:?defina JENKINS_ADMIN_SENHA no .env}
       SONAR_TOKEN: ${SONAR_TOKEN:-}
+      # Para a etapa "Testes de API", que sobe o jar no banco torque_api_test
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      TORQUE_ADMIN_EMAIL: ${TORQUE_ADMIN_EMAIL}
+      TORQUE_ADMIN_SENHA: ${TORQUE_ADMIN_SENHA}
     ports:
       # 8090 na máquina, porque a 8080 é da aplicação
       - "8090:8080"
