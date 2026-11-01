@@ -4,6 +4,23 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
+* N/A
+
+### Melhoria
+* N/A
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
+## [0.13.0] - 2026-11-01
+
+### Nova Funcionalidade
 * [feature/doc](https://github.com/evandrodezuani/torque/issues/7) - Documentação
 
 ### Melhoria
