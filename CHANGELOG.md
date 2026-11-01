@@ -4,7 +4,7 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
-* N/A
+* [feature/testes](https://github.com/evandrodezuani/torque/issues/6) - Relatório de cobertura com o JaCoCo, testes de API no pipeline do Jenkins
 
 ### Melhoria
 * N/A

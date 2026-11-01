@@ -1,0 +1,9 @@
+# Copie para application.properties (que fica fora do Git) e use os mesmos valores da aplicação testada.
+# Uma variável de ambiente com o mesmo nome ganha do arquivo (é o que o Jenkins usa).
+SERVER_PORT=8081
+# O nome do banco precisa terminar em api_test: os testes esvaziam as tabelas do negócio
+DB_URL=jdbc:postgresql://localhost:5432/torque_api_test
+DB_USER=
+DB_PASSWORD=
+TORQUE_ADMIN_EMAIL=
+TORQUE_ADMIN_SENHA=

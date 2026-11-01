@@ -121,11 +121,18 @@ docker compose --profile ci up --build
 | SonarQube | http://localhost:9000 | `admin` / `admin` no primeiro acesso; o SonarQube pede para trocar a senha |
 | Jenkins | http://localhost:8090 | `JENKINS_ADMIN_USER` / `JENKINS_ADMIN_SENHA` do `.env` |
 
-O Jenkins já sobe configurado (pasta [`ci/jenkins`](ci/jenkins)): os plugins, o usuário e o job `torque`, que roda o [`Jenkinsfile`](Jenkinsfile) da branch `main` do GitHub. O pipeline tem duas etapas: build com os testes, e análise no SonarQube. Para a análise funcionar:
+O Jenkins já sobe configurado (pasta [`ci/jenkins`](ci/jenkins)): os plugins, o usuário e o job `torque`, que roda o [`Jenkinsfile`](Jenkinsfile) da branch `main` do GitHub. O pipeline tem quatro etapas:
 
-1. No SonarQube, gere um token em **My Account → Security**.
-2. Coloque o token no `SONAR_TOKEN` do `.env`.
-3. Recrie o Jenkins: `docker compose --profile ci up -d jenkins`.
+1. **Build e testes**: os testes unitários e de integração, com o relatório de cobertura do JaCoCo. O build falha abaixo de 80%.
+2. **Testes de API**: sobe o jar que acabou de compilar, na porta 8081 e no banco `torque_api_test`, e roda o projeto `apitest` contra ele.
+3. **Análise no SonarQube**.
+4. **Quality Gate**: espera o resultado do SonarQube e falha o build se o Quality Gate falhar.
+
+Para as etapas 3 e 4 funcionarem, uma vez só:
+
+1. No SonarQube, gere um token do tipo **Global Analysis Token** em **My Account → Security**. O projeto `torque` é criado sozinho na primeira análise.
+2. Coloque o token no `SONAR_TOKEN` do `.env` e recrie o Jenkins: `docker compose --profile ci up -d jenkins`.
+3. No SonarQube, em **Administration → Configuration → Webhooks**, crie um webhook com a URL `http://jenkins:8080/sonarqube-webhook/`. É por ele que o Jenkins fica sabendo do resultado do Quality Gate. O SonarQube bloqueia webhooks para endereços de rede interna, como o do Jenkins no Docker, para se proteger de SSRF; por isso o `docker-compose.yml` sobe o SonarQube com `-Dsonar.validateWebhooks=false`, um risco aceito porque o SonarQube roda só localmente.
 
 ### Sem o Docker
 
@@ -142,18 +149,22 @@ Sem um servidor SMTP na porta 1025, a aplicação funciona normalmente: o envio 
 ## Instruções para execução dos testes
 
 ```bash
-./mvnw test          # no Windows: mvnw.cmd test
+./mvnw verify        # no Windows: mvnw.cmd verify
 ```
 
 São testes unitários (domínio e casos de uso) e de integração (controllers com MockMvc, repositórios e transações). Eles usam o H2 em memória no modo PostgreSQL ([`src/test/resources/application.properties`](src/test/resources/application.properties)), então não precisam de banco nem de Docker. Os testes de integração fazem cada requisição com o papel real da ação, e o `PermissoesTest` confere cada linha da matriz de papéis: 403 para quem não tem o papel e 401 sem token.
 
-Os testes de API ficam no projeto [`apitest`](apitest) (REST Assured) e rodam contra a aplicação de pé, por padrão em `http://localhost:8081`:
+**Cobertura.** O `verify` gera o relatório do JaCoCo em `target/site/jacoco/index.html` e **falha o build se a cobertura de linhas ficar abaixo de 80%**. Ficam fora da conta a classe com o `main`, as entidades JPA e os DTOs da API (`*Request`, `*Response`), que não têm regra de negócio. O SonarQube usa as mesmas exclusões. Só os testes, sem o relatório: `./mvnw test`.
+
+**Testes de API.** Ficam no projeto [`apitest`](apitest) (REST Assured) e rodam contra a aplicação de pé, com o login do ADMIN. Cada recurso tem três classes: o `Populate` grava direto no banco o que o teste precisa que já exista, o `API` faz as chamadas aos endpoints e o `Test` tem os testes. Os testes leem **as mesmas variáveis de ambiente da aplicação** que estão testando: `SERVER_PORT` (o endereço é `http://localhost:SERVER_PORT`, 8081 se faltar), `TORQUE_ADMIN_EMAIL` e `TORQUE_ADMIN_SENHA` (o login) e `DB_URL`, `DB_USER` e `DB_PASSWORD` (o banco). Os valores vêm das variáveis de ambiente ou, se não houver, do `apitest/src/test/resources/application.properties`, que fica fora do Git: copie o [`application.properties.example`](apitest/src/test/resources/application.properties.example) e preencha com os mesmos valores da aplicação. O banco precisa ser separado e ter o nome terminado em `api_test`, como o `torque_api_test`: os testes gravam dados e, no começo e no fim de cada classe, esvaziam as tabelas do negócio.
 
 ```bash
-./mvnw -f apitest/pom.xml test -Dapi.url=http://localhost:8081
+SERVER_PORT=8081 DB_URL=jdbc:postgresql://localhost:5432/torque_api_test DB_USER=<usuário> DB_PASSWORD=<senha> \
+TORQUE_ADMIN_EMAIL=<e-mail do ADMIN> TORQUE_ADMIN_SENHA=<senha do ADMIN> \
+./mvnw -f apitest/pom.xml test
 ```
 
-> Em andamento: os testes de API estão sendo atualizados para o login com JWT e vão entrar como uma etapa do pipeline do Jenkins. O relatório de cobertura (JaCoCo) entra no mesmo pipeline.
+No Jenkins, essa é a etapa **Testes de API** do pipeline, que sobe a aplicação e roda os testes sozinha.
 
 ## Instruções para acesso ao Swagger ou documentação da API
 
