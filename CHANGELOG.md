@@ -10,6 +10,23 @@
 * N/A
 
 ### Correção de Erro
+* [feature/testes](https://github.com/evandrodezuani/torque/issues/6) - Relatório de cobertura com o JaCoCo, testes de API no pipeline do Jenkins
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
+## [0.12.0] - 2026-11-01
+
+### Nova Funcionalidade
+* [feature/testes](https://github.com/evandrodezuani/torque/issues/6) - Relatório de cobertura com o JaCoCo, testes de API no pipeline do Jenkins
+
+### Melhoria
+* N/A
+
+### Correção de Erro
 * N/A
 
 ### Atualização de Dependências

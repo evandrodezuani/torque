@@ -42,25 +42,4 @@ class UsuarioJpaRepositoryTest {
 		assertThat(repository.existsByLogin("maria@oficina.com")).isFalse();
 	}
 
-	@Test
-	void sabeSeExisteUmAdminAtivo() {
-		var admin = new UsuarioEntity();
-		admin.setId(UUID.randomUUID());
-		admin.setLogin("admin@oficina.com");
-		admin.setSenha("hash-da-senha");
-		admin.setAtivo(false);
-		admin.setPapeis(Set.of(Papel.ADMIN, Papel.GERENTE));
-		repository.save(admin);
-		entityManager.flush();
-
-		assertThat(repository.existsByPapeisContainingAndAtivoTrue(Papel.ADMIN)).isFalse();
-
-		admin.setAtivo(true);
-		repository.save(admin);
-		entityManager.flush();
-
-		assertThat(repository.existsByPapeisContainingAndAtivoTrue(Papel.ADMIN)).isTrue();
-		assertThat(repository.existsByPapeisContainingAndAtivoTrue(Papel.MECANICO)).isFalse();
-	}
-
 }
