@@ -10,7 +10,7 @@
 * N/A
 
 ### Correção de Erro
-* N/A
+* [feature/testes](https://github.com/evandrodezuani/torque/issues/6) - Relatório de cobertura com o JaCoCo, testes de API no pipeline do Jenkins
 
 ### Atualização de Dependências
 * N/A
