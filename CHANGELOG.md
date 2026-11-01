@@ -4,7 +4,7 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
-* N/A
+* [feature/doc](https://github.com/evandrodezuani/torque/issues/7) - Documentação
 
 ### Melhoria
 * N/A
