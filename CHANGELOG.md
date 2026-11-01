@@ -4,7 +4,7 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
-* N/A
+* [feature/infra](https://github.com/evandrodezuani/torque/issues/22) - Configuração docker jenkins, sonar, README
 
 ### Melhoria
 * N/A

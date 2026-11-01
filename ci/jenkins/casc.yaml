@@ -1,0 +1,51 @@
+# Configuration as Code: o Jenkins lê este arquivo a cada subida, então a configuração
+# não depende do volume e é a mesma em qualquer máquina.
+jenkins:
+  systemMessage: "Torque - pipeline da branch main"
+  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_USER}"
+          password: "${JENKINS_ADMIN_SENHA}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - string:
+              scope: GLOBAL
+              id: "sonar-token"
+              description: "Token do SonarQube (SONAR_TOKEN do .env)"
+              secret: "${SONAR_TOKEN}"
+
+unclassified:
+  location:
+    url: "http://localhost:8090/"
+  sonarGlobalConfiguration:
+    buildWrapperEnabled: true
+    installations:
+      - name: "sonarqube"
+        serverUrl: "http://sonarqube:9000"
+        credentialsId: "sonar-token"
+
+jobs:
+  - script: >
+      pipelineJob('torque') {
+        description('Build, testes e análise no SonarQube da branch main do GitHub')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote { url('https://github.com/evandrodezuani/torque.git') }
+                branch('*/main')
+              }
+            }
+            scriptPath('Jenkinsfile')
+          }
+        }
+      }
