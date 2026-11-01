@@ -24,6 +24,11 @@ public interface OrdemServicoRepository {
     List<OrdemServico> listar(StatusOS status, boolean maisAntigasPrimeiro);
 
     /**
+     * Como o listar, só com as ordens de serviço do cliente.
+     */
+    List<OrdemServico> listarPorCliente(UUID clienteId, StatusOS status, boolean maisAntigasPrimeiro);
+
+    /**
      * Considera as OS com o serviço concluído a partir de {@code concluidasDesde} e antes de
      * {@code concluidasAntesDe}, do tipo de veículo informado
      */

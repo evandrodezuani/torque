@@ -4,7 +4,7 @@
 ## [Não lançado]
 
 ### Nova Funcionalidade
-* N/A
+* [feature/seguranca](https://github.com/evandrodezuani/torque/issues/21) - Autenticação JWT nas APIs, configurações de papeis, e o login é por e-mail
 
 ### Melhoria
 * N/A

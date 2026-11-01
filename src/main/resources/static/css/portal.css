@@ -66,3 +66,22 @@ button {
 .rejeitar {
     background: #b91c1c;
 }
+
+label {
+    display: block;
+    margin: 16px 0 4px;
+    font-size: 14px;
+}
+
+input[type="text"], input[type="password"] {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.erro {
+    color: #b91c1c;
+}

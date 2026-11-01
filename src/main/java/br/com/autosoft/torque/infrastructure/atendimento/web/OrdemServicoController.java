@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import br.com.autosoft.torque.application.atendimento.OrdemServicoService;
 import br.com.autosoft.torque.domain.atendimento.model.StatusOS;
 import br.com.autosoft.torque.domain.cadastro.model.TipoVeiculo;
+import br.com.autosoft.torque.infrastructure.shared.security.ClienteLogado;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -39,8 +41,11 @@ class OrdemServicoController {
 
 	@GetMapping
 	public List<OrdemServicoResponse> listar(@RequestParam(required = false) StatusOS status,
-			@RequestParam(defaultValue = "DESC") Sort.Direction ordem) {
-		return ordemServicoService.listar(status, ordem.isAscending()).stream()
+			@RequestParam(defaultValue = "DESC") Sort.Direction ordem, Authentication autenticacao) {
+		var ordens = ClienteLogado.id(autenticacao)
+				.map(clienteId -> ordemServicoService.listarDoCliente(clienteId, status, ordem.isAscending()))
+				.orElseGet(() -> ordemServicoService.listar(status, ordem.isAscending()));
+		return ordens.stream()
 				.map(OrdemServicoResponse::paraResposta)
 				.toList();
 	}
@@ -53,8 +58,11 @@ class OrdemServicoController {
 	}
 
 	@GetMapping("/{id}")
-	public OrdemServicoResponse consultar(@PathVariable UUID id) {
-		return OrdemServicoResponse.paraResposta(ordemServicoService.consultar(id));
+	public OrdemServicoResponse consultar(@PathVariable UUID id, Authentication autenticacao) {
+		var ordemServico = ClienteLogado.id(autenticacao)
+				.map(clienteId -> ordemServicoService.consultarDoCliente(clienteId, id))
+				.orElseGet(() -> ordemServicoService.consultar(id));
+		return OrdemServicoResponse.paraResposta(ordemServico);
 	}
 
 	@PostMapping("/{id}/iniciar-diagnostico")
@@ -100,13 +108,19 @@ class OrdemServicoController {
 	}
 
 	@PostMapping("/{id}/aprovar-orcamento")
-	public OrdemServicoResponse aprovarOrcamento(@PathVariable UUID id) {
-		return OrdemServicoResponse.paraResposta(ordemServicoService.aprovarOrcamento(id));
+	public OrdemServicoResponse aprovarOrcamento(@PathVariable UUID id, Authentication autenticacao) {
+		var ordemServico = ClienteLogado.id(autenticacao)
+				.map(clienteId -> ordemServicoService.aprovarOrcamentoDoCliente(clienteId, id))
+				.orElseGet(() -> ordemServicoService.aprovarOrcamento(id));
+		return OrdemServicoResponse.paraResposta(ordemServico);
 	}
 
 	@PostMapping("/{id}/rejeitar-orcamento")
-	public OrdemServicoResponse rejeitarOrcamento(@PathVariable UUID id) {
-		return OrdemServicoResponse.paraResposta(ordemServicoService.rejeitarOrcamento(id));
+	public OrdemServicoResponse rejeitarOrcamento(@PathVariable UUID id, Authentication autenticacao) {
+		var ordemServico = ClienteLogado.id(autenticacao)
+				.map(clienteId -> ordemServicoService.rejeitarOrcamentoDoCliente(clienteId, id))
+				.orElseGet(() -> ordemServicoService.rejeitarOrcamento(id));
+		return OrdemServicoResponse.paraResposta(ordemServico);
 	}
 
 	@PostMapping("/{id}/revisar-orcamento")

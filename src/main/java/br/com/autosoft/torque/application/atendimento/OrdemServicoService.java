@@ -69,6 +69,19 @@ public class OrdemServicoService {
 		return repository.listar(status, maisAntigasPrimeiro);
 	}
 
+	// O cliente só enxerga as próprias OS. A OS de outro cliente responde como se não existisse.
+	public OrdemServico consultarDoCliente(UUID clienteId, UUID id) {
+		var ordemServico = consultar(id);
+		if (!ordemServico.getClienteId().equals(clienteId)) {
+			throw new NaoEncontradoException("Ordem de serviço não encontrada");
+		}
+		return ordemServico;
+	}
+
+	public List<OrdemServico> listarDoCliente(UUID clienteId, StatusOS status, boolean maisAntigasPrimeiro) {
+		return repository.listarPorCliente(clienteId, status, maisAntigasPrimeiro);
+	}
+
 	public TempoMedioDeExecucao tempoMedioDeExecucao(TipoVeiculo tipoVeiculo, LocalDate concluidasDe,
 			LocalDate concluidasAte) {
 		if (concluidasDe != null && concluidasAte != null && concluidasDe.isAfter(concluidasAte)) {
@@ -166,6 +179,16 @@ public class OrdemServicoService {
 	@Transactional
 	public OrdemServico rejeitarOrcamento(UUID id) {
 		return rejeitar(consultar(id));
+	}
+
+	@Transactional
+	public OrdemServico aprovarOrcamentoDoCliente(UUID clienteId, UUID id) {
+		return aprovar(consultarDoCliente(clienteId, id));
+	}
+
+	@Transactional
+	public OrdemServico rejeitarOrcamentoDoCliente(UUID clienteId, UUID id) {
+		return rejeitar(consultarDoCliente(clienteId, id));
 	}
 
 	public Acompanhamento acompanhar(UUID codigoAcompanhamento) {

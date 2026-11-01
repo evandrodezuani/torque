@@ -7,6 +7,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.almoxarife;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.atendente;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.mecanico;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +61,7 @@ class PortalControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Orçamento aprovado")));
 
-        mockMvc.perform(get("/itens-estoque/" + OLEO_10W30))
+        mockMvc.perform(get("/itens-estoque/" + OLEO_10W30).with(almoxarife()))
                 .andExpect(jsonPath("$.saldo").value(8))
                 .andExpect(jsonPath("$.reservado").value(0));
     }
@@ -102,7 +105,7 @@ class PortalControllerTest {
     }
 
     private String abrirComOrcamentoEnviado() throws Exception {
-        var resposta = mockMvc.perform(post("/ordens-servico").contentType(MediaType.APPLICATION_JSON)
+        var resposta = mockMvc.perform(post("/ordens-servico").with(atendente()).contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "clienteId": "3f2a1c4e-8b7d-4e6f-9a1b-2c3d4e5f6a7b",
@@ -112,14 +115,14 @@ class PortalControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String id = JsonPath.read(resposta, "$.id");
-        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico")).andExpect(status().isOk());
-        mockMvc.perform(post("/ordens-servico/" + id + "/servicos").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico").with(mecanico())).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/servicos").with(mecanico()).contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"servicoId\": \"6b2c3d4e-5f6a-4b7c-9d8e-0f1a2b3c4d5e\", \"quantidade\": 1 }"))
                 .andExpect(status().isOk());
-        mockMvc.perform(post("/ordens-servico/" + id + "/pecas").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/ordens-servico/" + id + "/pecas").with(mecanico()).contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"itemEstoqueId\": \"" + OLEO_10W30 + "\", \"quantidade\": 2 }"))
                 .andExpect(status().isOk());
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico").with(mecanico())).andExpect(status().isOk());
         return JsonPath.read(resposta, "$.codigoAcompanhamento");
     }
 

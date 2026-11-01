@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.gerente;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +41,7 @@ class ServicoControllerTest {
 		cadastrar(TROCA_DE_OLEO_CARRO);
 		cadastrar(TROCA_DE_OLEO_CARRO.replace("CARRO", "MOTO").replace("80.00", "50.00"));
 
-		mockMvc.perform(get("/servicos"))
+		mockMvc.perform(get("/servicos").with(gerente()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.length()").value(2));
 	}
@@ -49,14 +50,14 @@ class ServicoControllerTest {
 	void recusaOMesmoServicoParaOMesmoTipoDeVeiculo() throws Exception {
 		cadastrar(TROCA_DE_OLEO_CARRO);
 
-		mockMvc.perform(post("/servicos").contentType(MediaType.APPLICATION_JSON).content(TROCA_DE_OLEO_CARRO))
+		mockMvc.perform(post("/servicos").with(gerente()).contentType(MediaType.APPLICATION_JSON).content(TROCA_DE_OLEO_CARRO))
 				.andExpect(status().isUnprocessableContent())
 				.andExpect(jsonPath("$.detail").value("Já existe serviço deste tipo para este tipo de veículo"));
 	}
 
 	@Test
 	void recusaTipoDeVeiculoDesconhecido() throws Exception {
-		mockMvc.perform(post("/servicos").contentType(MediaType.APPLICATION_JSON)
+		mockMvc.perform(post("/servicos").with(gerente()).contentType(MediaType.APPLICATION_JSON)
 						.content(TROCA_DE_OLEO_CARRO.replace("CARRO", "BICICLETA")))
 				.andExpect(status().isBadRequest());
 	}
@@ -65,7 +66,7 @@ class ServicoControllerTest {
 	void inativaOServico() throws Exception {
 		String id = cadastrar(TROCA_DE_OLEO_CARRO);
 
-		mockMvc.perform(put("/servicos/" + id).contentType(MediaType.APPLICATION_JSON)
+		mockMvc.perform(put("/servicos/" + id).with(gerente()).contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
 								  "tipoServicoId": "5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
@@ -83,7 +84,7 @@ class ServicoControllerTest {
 	void naoRemoveTipoDeServicoQueTemServico() throws Exception {
 		cadastrar(TROCA_DE_OLEO_CARRO);
 
-		mockMvc.perform(delete("/tipos-servico/5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"))
+		mockMvc.perform(delete("/tipos-servico/5a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d").with(gerente()))
 				.andExpect(status().isUnprocessableContent())
 				.andExpect(jsonPath("$.detail").value("O tipo de serviço tem serviços cadastrados e não pode ser removido"));
 	}
@@ -92,14 +93,14 @@ class ServicoControllerTest {
 	void removeOServico() throws Exception {
 		String id = cadastrar(TROCA_DE_OLEO_CARRO);
 
-		mockMvc.perform(delete("/servicos/" + id)).andExpect(status().isNoContent());
-		mockMvc.perform(get("/servicos/" + id))
+		mockMvc.perform(delete("/servicos/" + id).with(gerente())).andExpect(status().isNoContent());
+		mockMvc.perform(get("/servicos/" + id).with(gerente()))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.detail").value("Serviço não encontrado"));
 	}
 
 	private String cadastrar(String json) throws Exception {
-		String resposta = mockMvc.perform(post("/servicos").contentType(MediaType.APPLICATION_JSON).content(json))
+		String resposta = mockMvc.perform(post("/servicos").with(gerente()).contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isCreated())
 				.andReturn().getResponse().getContentAsString();
 		return JsonPath.read(resposta, "$.id");

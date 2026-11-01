@@ -17,6 +17,12 @@ public interface ClienteRepository {
 
 	boolean existePorDocumento(Documento documento);
 
+	boolean existePorEmail(String email);
+
+	Optional<Cliente> buscarPorEmail(String email);
+
+	Optional<Cliente> buscarPorDocumento(Documento documento);
+
 	void remover(UUID id);
 
 }

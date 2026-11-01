@@ -27,7 +27,9 @@ class ClienteServiceTest {
 	private final ClienteRepository repository = mock(ClienteRepository.class);
 	private final OrdemServicoRepository ordemServicoRepository = mock(OrdemServicoRepository.class);
 	private final VeiculoRepository veiculoRepository = mock(VeiculoRepository.class);
-	private final ClienteService clienteService = new ClienteService(repository,ordemServicoRepository, veiculoRepository);
+	private final AcessoDoCliente acessoDoCliente = mock(AcessoDoCliente.class);
+	private final ClienteService clienteService = new ClienteService(repository,ordemServicoRepository, veiculoRepository,
+			acessoDoCliente);
 
 	private final Cliente mockClient = Cliente.cadastrar(new Documento("529.982.247-25"), "Maria Souza", "maria@email.com", null);
 
@@ -37,6 +39,7 @@ class ClienteServiceTest {
 
 		assertThat(cliente.getDocumento()).isEqualTo(new Documento("52998224725"));
 		verify(repository).salvar(cliente);
+		verify(acessoDoCliente).liberar(cliente);
 	}
 
 	@Test
@@ -46,6 +49,29 @@ class ClienteServiceTest {
 		assertThatThrownBy(() -> clienteService.cadastrar("529.982.247-25", "Maria Souza", "maria@email.com", null))
 				.isInstanceOf(RegraDeNegocioException.class)
 				.hasMessage("Já existe cliente com este documento");
+		verify(repository, never()).salvar(any());
+		verify(acessoDoCliente, never()).liberar(any());
+	}
+
+	@Test
+	void recusaEmailJaCadastradoMesmoComOutraCaixa() {
+		when(repository.existePorEmail("maria@email.com")).thenReturn(true);
+
+		assertThatThrownBy(() -> clienteService.cadastrar("529.982.247-25", "Maria Souza", "Maria@Email.com", null))
+				.isInstanceOf(RegraDeNegocioException.class)
+				.hasMessage("Já existe cliente com este e-mail");
+		verify(repository, never()).salvar(any());
+	}
+
+	@Test
+	void naoAlteraParaOEmailDeOutroCliente() {
+		when(repository.buscarPorId(mockClient.getId())).thenReturn(Optional.of(mockClient));
+		when(repository.existePorEmail("contato@amiga.com")).thenReturn(true);
+
+		assertThatThrownBy(() -> clienteService.alterar(mockClient.getId(), "52998224725", "Maria Souza",
+				"contato@amiga.com", null))
+				.isInstanceOf(RegraDeNegocioException.class)
+				.hasMessage("Já existe cliente com este e-mail");
 		verify(repository, never()).salvar(any());
 	}
 
@@ -86,9 +112,10 @@ class ClienteServiceTest {
 
 		clienteService.remover(mockClient.getId());
 
-		var ordem = inOrder(ordemServicoRepository, veiculoRepository, repository);
+		var ordem = inOrder(ordemServicoRepository, veiculoRepository, acessoDoCliente, repository);
 		ordem.verify(ordemServicoRepository).removerPorCliente(mockClient.getId());
 		ordem.verify(veiculoRepository).removerPorCliente(mockClient.getId());
+		ordem.verify(acessoDoCliente).remover(mockClient.getId());
 		ordem.verify(repository).remover(mockClient.getId());
 	}
 }

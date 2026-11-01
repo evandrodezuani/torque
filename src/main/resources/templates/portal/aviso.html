@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titulo}">Senha criada</title>
+    <link rel="stylesheet" th:href="@{/css/portal.css}">
+</head>
+<body>
+<main>
+    <h1 th:text="${titulo}">Senha criada</h1>
+    <p th:text="${texto}">Pronto! Agora você já pode entrar com o seu e-mail e esta senha.</p>
+    <form th:if="${pedirNovoLink}" method="post" th:action="@{/portal/senha/novo-link}">
+        <label for="emailOuDocumento">E-mail ou CPF/CNPJ do cadastro</label>
+        <input type="text" id="emailOuDocumento" name="emailOuDocumento" required>
+        <div class="acoes">
+            <button type="submit" class="aprovar">Receber um novo link</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

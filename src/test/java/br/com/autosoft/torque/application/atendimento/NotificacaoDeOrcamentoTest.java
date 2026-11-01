@@ -6,6 +6,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.atendente;
+import static br.com.autosoft.torque.infrastructure.shared.security.UsuariosDeTeste.mecanico;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -54,7 +56,7 @@ class NotificacaoDeOrcamentoTest {
     void avisaOClienteDepoisQueODiagnosticoEConcluido() throws Exception {
         var id = abrirEmDiagnosticoComOleo(1);
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico").with(mecanico())).andExpect(status().isOk());
 
         var cliente = ArgumentCaptor.forClass(Cliente.class);
         var acompanhamento = ArgumentCaptor.forClass(Acompanhamento.class);
@@ -68,7 +70,7 @@ class NotificacaoDeOrcamentoTest {
     void naoAvisaQuandoAConclusaoEDesfeitaPorFaltaDeEstoque() throws Exception {
         var id = abrirEmDiagnosticoComOleo(3);
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico"))
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico").with(mecanico()))
                 .andExpect(status().isUnprocessableContent());
 
         verify(notificador, never()).orcamentoDisponivel(any(), any());
@@ -79,13 +81,13 @@ class NotificacaoDeOrcamentoTest {
     void naoAvisaEnquantoATransacaoNaoForConfirmada() throws Exception {
         var id = abrirEmDiagnosticoComOleo(1);
 
-        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico")).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/concluir-diagnostico").with(mecanico())).andExpect(status().isOk());
 
         verify(notificador, never()).orcamentoDisponivel(any(), any());
     }
 
     private String abrirEmDiagnosticoComOleo(int quantidade) throws Exception {
-        var resposta = mockMvc.perform(post("/ordens-servico").contentType(MediaType.APPLICATION_JSON)
+        var resposta = mockMvc.perform(post("/ordens-servico").with(atendente()).contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "clienteId": "3f2a1c4e-8b7d-4e6f-9a1b-2c3d4e5f6a7b",
@@ -95,8 +97,8 @@ class NotificacaoDeOrcamentoTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         String id = JsonPath.read(resposta, "$.id");
-        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico")).andExpect(status().isOk());
-        mockMvc.perform(post("/ordens-servico/" + id + "/pecas").contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/ordens-servico/" + id + "/iniciar-diagnostico").with(mecanico())).andExpect(status().isOk());
+        mockMvc.perform(post("/ordens-servico/" + id + "/pecas").with(mecanico()).contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"itemEstoqueId\": \"" + OLEO + "\", \"quantidade\": " + quantidade + " }"))
                 .andExpect(status().isOk());
         return id;

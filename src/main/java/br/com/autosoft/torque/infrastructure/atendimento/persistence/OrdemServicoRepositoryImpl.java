@@ -55,6 +55,14 @@ class OrdemServicoRepositoryImpl implements OrdemServicoRepository {
 	}
 
 	@Override
+	public List<OrdemServico> listarPorCliente(UUID clienteId, StatusOS status, boolean maisAntigasPrimeiro) {
+		var ordem = Sort.by(maisAntigasPrimeiro ? Sort.Direction.ASC : Sort.Direction.DESC, "abertaEm");
+		var entities = status == null ? jpaRepository.findByClienteId(clienteId, ordem)
+				: jpaRepository.findByClienteIdAndStatus(clienteId, status, ordem);
+		return entities.stream().map(this::paraDominio).toList();
+	}
+
+	@Override
 	public TempoMedioDeExecucao tempoMedioDeExecucao(TipoVeiculo tipoVeiculo, Instant concluidasDesde,
                                                      Instant concluidasAntesDe) {
 		var jpql = new StringBuilder("select new br.com.autosoft.torque.infrastructure.atendimento.persistence.TempoMedioLinha" +
