@@ -18,6 +18,23 @@
 ### Atualização de banco de dados
 * N/A
 
+## [0.14.0] - 2026-11-03
+
+### Nova Funcionalidade
+* N/A
+
+### Melhoria
+* [feature/readme](https://github.com/evandrodezuani/torque/issues/23) - Documentação
+
+### Correção de Erro
+* N/A
+
+### Atualização de Dependências
+* N/A
+
+### Atualização de banco de dados
+* N/A
+
 ## [0.13.0] - 2026-11-01
 
 ### Nova Funcionalidade
