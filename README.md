@@ -266,7 +266,7 @@ torque/
 
 ## Link para o vídeo da entrega
 
-_A publicar._
+[Link Fase 1 ](https://drive.google.com/file/d/1HlrhOkTa6Uwf9O8wPdXMDn4oo07_-Gz_/view?usp=sharing)
 
 ## Limitações conhecidas
 
