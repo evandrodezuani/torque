@@ -7,7 +7,7 @@
 * N/A
 
 ### Melhoria
-* N/A
+* [feature/readme](https://github.com/evandrodezuani/torque/issues/23) - Documentação
 
 ### Correção de Erro
 * N/A
